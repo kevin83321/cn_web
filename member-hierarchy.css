@@ -1,0 +1,15 @@
+#hierarchyPanel select{width:100%;padding:12px;border:1px solid #cdd4df;border-radius:9px;background:#fff;font-size:15px}
+.hierarchy-tree{border:1px solid #e2e8f0;border-radius:12px;padding:12px;overflow:auto}
+.hierarchy-tree ul{list-style:none;margin:0;padding-left:24px;border-left:1px dashed #cbd5e1}
+.hierarchy-tree .hierarchy-root{padding-left:0;border:0}
+.hierarchy-tree li{margin:7px 0}
+.hierarchy-node{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8fafc;padding:9px;border-radius:8px}
+.hierarchy-node small{color:#64748b}
+.hierarchy-toggle,.hierarchy-toggle-placeholder{flex:0 0 28px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center}
+.hierarchy-toggle{padding:0;border:0;border-radius:6px;background:#2559d8;color:#fff}
+.hierarchy-warning{color:#b45309}
+.hierarchy-table-wrap{overflow-x:auto}
+.hierarchy-table{width:100%;border-collapse:collapse;min-width:600px;text-align:left}
+.hierarchy-table th,.hierarchy-table td{border-bottom:1px solid #e2e8f0;padding:10px 8px;font-size:14px}
+.hierarchy-table th{background:#f1f5f9}
+.hierarchy-table code{font-size:12px;overflow-wrap:anywhere}

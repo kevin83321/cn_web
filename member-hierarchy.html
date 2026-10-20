@@ -1,0 +1,23 @@
+<!-- Add inside the existing <section id="memberPanel">, after the LINE binding section. -->
+<hr>
+<section id="hierarchyPanel" aria-labelledby="hierarchyHeading">
+  <h2 id="hierarchyHeading">會員階層管理</h2>
+  <p>僅顯示目前登入會員的所有下線。資料由 GAS Session 權限決定。</p>
+  <div class="actions">
+    <button type="button" id="hierarchyReload">載入／更新下線資料</button>
+    <button type="button" id="hierarchyExpand" class="muted">全部展開</button>
+    <button type="button" id="hierarchyCollapse" class="muted">全部收合</button>
+  </div>
+  <p id="hierarchyMessage" role="status">請點擊「載入／更新下線資料」</p>
+  <h2>會員階層樹</h2>
+  <div id="hierarchyTree" class="hierarchy-tree"></div>
+  <h2>下線會員列表</h2>
+  <label for="hierarchySearch">搜尋姓名、會員 ID、直屬上線</label>
+  <input id="hierarchySearch" type="search" placeholder="輸入關鍵字">
+  <div class="grid">
+    <div><label for="hierarchyDepth">層級</label><select id="hierarchyDepth"><option value="">全部層級</option></select></div>
+    <div><label for="hierarchyStatus">狀態</label><select id="hierarchyStatus"><option value="">全部狀態</option><option value="active">active</option><option value="inactive">inactive</option></select></div>
+  </div>
+  <p id="hierarchyCount"></p>
+  <div class="hierarchy-table-wrap"><table class="hierarchy-table"><thead><tr><th>姓名</th><th>會員 ID</th><th>直屬上線</th><th>層級</th><th>狀態</th></tr></thead><tbody id="hierarchyRows"></tbody></table></div>
+</section>

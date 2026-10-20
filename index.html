@@ -1,11 +1,63 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GAS Login POC</title><style>body{font-family:system-ui;max-width:620px;margin:50px auto;padding:16px;background:#f4f6fa}main{background:white;padding:24px;border-radius:12px}input,button{display:block;width:100%;box-sizing:border-box;margin:10px 0;padding:12px}button{background:#225bd7;color:white;border:0;border-radius:6px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#172032;color:#e0f1eb;padding:15px;border-radius:8px}.hidden{display:none}</style></head><body><main><h2>GitHub Pages + GAS 登入 POC</h2><label>GAS Web App /exec URL<input id="url" placeholder="https://script.google.com/macros/s/.../exec"></label><section id="login"><label>帳號<input id="username" value="demo01" autocomplete="username"></label><label>密碼<input id="password" type="password" autocomplete="current-password"></label><button id="loginBtn">登入</button></section><section id="private" class="hidden"><h3>登入成功</h3><button id="meBtn">驗證 Session / 讀取個人資料</button><button id="logoutBtn">登出</button></section><pre id="out">等待操作</pre></main><script>
-const $=id=>document.getElementById(id);let token=sessionStorage.getItem('demo_session')||'';
-$('url').value=localStorage.getItem('demo_api_url')||'';
-function show(v){$('out').textContent=JSON.stringify(v,null,2)}
-function view(auth){$('login').classList.toggle('hidden',auth);$('private').classList.toggle('hidden',!auth)}
-async function api(data){const url=$('url').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(url))throw Error('請輸入有效的 GAS /exec URL');localStorage.setItem('demo_api_url',url);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data),redirect:'follow'});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}
-$('loginBtn').onclick=async()=>{try{const r=await api({action:'login',username:$('username').value,password:$('password').value});$('password').value='';if(r.success){token=r.token;sessionStorage.setItem('demo_session',token);view(true);show({success:true,member:r.member,expires_at:r.expires_at})}else show(r)}catch(e){show({error:e.message})}};
-$('meBtn').onclick=async()=>{try{const r=await api({action:'me',token});show(r);if(!r.success){token='';sessionStorage.removeItem('demo_session');view(false)}}catch(e){show({error:e.message})}};
-$('logoutBtn').onclick=async()=>{try{show(await api({action:'logout',token}))}catch(e){show({error:e.message})}finally{token='';sessionStorage.removeItem('demo_session');view(false)}};
-(async()=>{if(token){try{const r=await api({action:'me',token});if(r.success){view(true);show(r);return}}catch(e){show({error:e.message})}token='';sessionStorage.removeItem('demo_session')}view(false)})();
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>會員登入｜帳密與 LINE</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+:root{font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif;color:#172033;background:#f4f6fb}*{box-sizing:border-box}body{margin:0;padding:24px}.wrap{max-width:720px;margin:auto;background:white;padding:28px;border-radius:18px;box-shadow:0 10px 32px #17203310}h1{font-size:25px;margin:0 0 12px}h2{font-size:19px;margin:20px 0 10px}p{line-height:1.65;color:#556078}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:block;margin:12px 0 5px;font-weight:600}input{width:100%;padding:12px;border:1px solid #cdd4df;border-radius:9px;font-size:15px}button{padding:12px 14px;border:0;border-radius:9px;background:#2559d8;color:#fff;cursor:pointer;font-size:15px;font-weight:600}button:disabled{opacity:.5;cursor:wait}.line{background:#06c755}.muted{background:#64748b}.danger{background:#d43b3b}.actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}.actions button{flex:1 1 170px}.hidden{display:none!important}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#172033;color:#dbeafe;padding:16px;border-radius:10px;font-size:13px;min-height:80px}hr{border:0;border-top:1px solid #e2e8f0;margin:24px 0}.pill{display:inline-block;border-radius:20px;background:#e8f4ef;color:#08774a;padding:5px 11px;font-size:13px}#notice{color:#b45309;font-size:14px}small{color:#64748b}@media(max-width:540px){.grid{grid-template-columns:1fr}.wrap{padding:18px}body{padding:10px}}
+</style>
+</head>
+<body><main class="wrap">
+<h1>會員登入</h1><p>帳號密碼與 LINE 使用相同會員資料、Session 與權限。</p>
+<details id="settings"><summary>POC 設定（正式版請固定於部署設定）</summary><label for="api">GAS Web App /exec URL</label><input id="api" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"><label for="liffid">LIFF ID</label><input id="liffid" autocomplete="off" placeholder="1234567890-xxxxxxx"><div class="actions"><button id="saveSettings" class="muted">儲存設定</button></div></details>
+<section id="loginPanel"><h2>帳號密碼登入</h2><form id="loginForm"><label for="username">帳號</label><input id="username" autocomplete="username" required><label for="password">密碼</label><input id="password" type="password" autocomplete="current-password" required><div class="actions"><button type="submit">登入</button></div></form><hr><h2>LINE 登入</h2><div class="actions"><button id="lineLogin" class="line">使用 LINE 登入</button></div><small>第一次使用 LINE 登入，請先用帳密登入，再到會員中心綁定 LINE。</small></section>
+<section id="memberPanel" class="hidden"><h2>會員中心 <span class="pill">已登入</span></h2><p id="memberInfo"></p><p id="expiresInfo"></p><div class="actions"><button id="refresh">驗證 Session／更新會員資料</button><button id="logout" class="muted">登出</button></div><hr><h2>LINE 帳號綁定</h2><p id="bindInfo">讀取中…</p><label for="confirmPassword">會員密碼（綁定或解除綁定時需再次確認）</label><input id="confirmPassword" type="password" autocomplete="off"><div class="actions"><button id="bind" class="line">綁定目前 LINE 帳號</button><button id="unbind" class="danger">解除 LINE 綁定</button><button id="checkBind" class="muted">查詢綁定狀態</button></div></section>
+<p id="notice" role="status" aria-live="polite"></p><h2>API 回應（不顯示 Token）</h2><pre id="result">等待操作</pre>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const CONFIG={gasUrl:'',liffId:''}; // 正式部署時可填入固定值
+const TOKEN_KEY='member_session_token';
+let sessionToken=sessionStorage.getItem(TOKEN_KEY)||'';
+let liffReady=false;
+let busy=false;
+$('api').value=CONFIG.gasUrl||sessionStorage.getItem('gas_url')||'';
+$('liffid').value=CONFIG.liffId||localStorage.getItem('liff_id')||'';
+function notice(s){$('notice').textContent=s||'';}
+function display(data){
+ const safe=JSON.parse(JSON.stringify(data));
+ if(safe&&typeof safe==='object'){delete safe.token;delete safe.id_token;delete safe.password;}
+ $('result').textContent=JSON.stringify(safe,null,2);
+}
+function setBusy(v){busy=v;document.querySelectorAll('button').forEach(b=>b.disabled=v);}
+async function run(fn){if(busy)return;setBusy(true);notice('');try{await fn();}catch(e){notice(e.message||String(e));display({success:false,error:e.message||String(e)});}finally{setBusy(false);}}
+function gasUrl(){const url=$('api').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\?.*)?$/.test(url))throw Error('請填寫正確的 GAS /exec URL');return url;}
+function saveSettings(){sessionStorage.setItem('gas_url',gasUrl());const id=$('liffid').value.trim();if(id)localStorage.setItem('liff_id',id);notice('設定已儲存');}
+async function api(action,extra={}){
+ const res=await fetch(gasUrl(),{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...extra})});
+ if(!res.ok)throw Error('API HTTP '+res.status);
+ return await res.json();
+}
+function showLoggedIn(member,expires){$('loginPanel').classList.add('hidden');$('memberPanel').classList.remove('hidden');$('memberInfo').textContent=`會員：${member.name||''}（${member.member_id||''}）｜角色：${member.role||''}`;$('expiresInfo').textContent=expires?'Session 到期時間：'+new Date(expires).toLocaleString('zh-TW'):'';}
+function showLoggedOut(){sessionToken='';sessionStorage.removeItem(TOKEN_KEY);$('memberPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');$('confirmPassword').value='';$('password').value='';}
+async function restore(){if(!sessionToken){showLoggedOut();return;}const r=await api('me',{token:sessionToken});display(r);if(!r.success){showLoggedOut();notice('Session 已失效，請重新登入');return;}showLoggedIn(r.member,r.expires_at);await checkBinding(false);}
+async function acceptLogin(r){display(r);if(!r.success||!r.token){notice('登入失敗：'+(r.error||'未知錯誤'));return;}sessionToken=r.token;sessionStorage.setItem(TOKEN_KEY,sessionToken);await restore();}
+async function ensureLiff(){if(liffReady)return true;if(!window.liff)throw Error('LIFF SDK 尚未載入');const id=$('liffid').value.trim();if(!id)throw Error('請先設定 LIFF ID');localStorage.setItem('liff_id',id);await liff.init({liffId:id});liffReady=true;if(!liff.isLoggedIn()){liff.login({redirectUri:location.origin+location.pathname+location.search});return false;}return true;}
+function tokenExpired(jwt){try{const p=jwt.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');const payload=JSON.parse(atob(p));return !payload.exp||Date.now()>=Number(payload.exp)*1000-60000;}catch(_){return true;}}
+async function lineToken(){if(!await ensureLiff())return null;const idToken=liff.getIDToken();if(!idToken||tokenExpired(idToken)){
+ // 不使用已過期 ID Token，要求重新取得 LINE 授權。
+ liff.logout();liffReady=false;notice('LINE 授權已過期，正在重新登入');liff.login({redirectUri:location.origin+location.pathname+location.search});return null;
+ }return idToken;}
+async function checkBinding(render=true){const r=await api('line_status',{token:sessionToken});if(render)display(r);if(!r.success){if(r.error==='UNAUTHORIZED'){showLoggedOut();notice('Session 已失效');}else notice(r.error||'查詢失敗');return;}$('bindInfo').textContent=r.bound?'LINE 綁定狀態：已綁定':'LINE 綁定狀態：尚未綁定';}
+$('saveSettings').onclick=()=>run(async()=>saveSettings());
+$('loginForm').onsubmit=e=>{e.preventDefault();run(async()=>{const r=await api('login',{username:$('username').value.trim(),password:$('password').value});await acceptLogin(r);});};
+$('lineLogin').onclick=()=>run(async()=>{const id_token=await lineToken();if(!id_token)return;await acceptLogin(await api('line_login',{id_token}));});
+$('refresh').onclick=()=>run(restore);
+$('checkBind').onclick=()=>run(()=>checkBinding(true));
+$('bind').onclick=()=>run(async()=>{if(!sessionToken)throw Error('請先登入會員');const password=$('confirmPassword').value;if(!password)throw Error('請輸入會員密碼');const id_token=await lineToken();if(!id_token)return;const r=await api('line_bind',{token:sessionToken,password,id_token});display(r);$('confirmPassword').value='';if(r.success){notice('LINE 綁定成功');await checkBinding(false);}else notice('綁定失敗：'+(r.error||'未知錯誤'));});
+$('unbind').onclick=()=>run(async()=>{if(!sessionToken)throw Error('請先登入會員');const password=$('confirmPassword').value;if(!password)throw Error('請輸入會員密碼');if(!confirm('確定解除 LINE 綁定？解除後將無法使用 LINE 登入，直到重新綁定。'))return;const r=await api('line_unbind',{token:sessionToken,password});display(r);$('confirmPassword').value='';if(r.success){notice('已解除 LINE 綁定');await checkBinding(false);}else notice('解除失敗：'+(r.error||'未知錯誤'));});
+$('logout').onclick=()=>run(async()=>{const t=sessionToken;showLoggedOut();try{const r=await api('logout',{token:t});display(r);notice(r.success?'已登出':'已清除本機登入狀態，後端登出回應：'+(r.error||'失敗'));}catch(e){notice('已清除本機登入狀態；無法確認伺服器 Session 是否撤銷：'+e.message);}});
+if(sessionToken)run(restore);else showLoggedOut();
 </script></body></html>

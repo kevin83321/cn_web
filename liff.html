@@ -1,39 +1,589 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LINE LIFF 雙登入測試</title><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><style>body{font-family:system-ui;max-width:680px;margin:40px auto;padding:18px}input,button{box-sizing:border-box;width:100%;padding:12px;margin:7px 0}button{cursor:pointer}pre{background:#182133;color:#def;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere}</style></head><body>
-<h2>LINE LIFF 登入 / 綁定</h2>
-<label>GAS Web App /exec URL<input id="api" placeholder="https://script.google.com/macros/s/.../exec"></label>
-<label>LIFF ID<input id="liffid" placeholder="1234567890-xxxxxxx"></label>
-<button id="init">初始化 LIFF / LINE 授權</button><button id="login">LINE 登入（已綁定）</button>
-<hr><p>綁定流程：先在一般登入頁完成帳密登入，然後在同一瀏覽器開啟此頁。</p>
-<label>帳密登入 Session Token（POC 測試用）<input id="token" type="password" placeholder="可手動貼上一般登入 Session Token"></label>
-<label>再次輸入帳號密碼（確認綁定）<input id="password" type="password"></label>
-<button id="bind">綁定目前 LINE 身分</button><button id="status">查詢綁定狀態</button><button id="unbind">解除 LINE 綁定</button>
-<pre id="result">等待操作</pre>
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>LINE LIFF 登入與帳號綁定</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, "Microsoft JhengHei", sans-serif;
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f7fa;
+      color: #222;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.06);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 7px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 6px;
+      background: #2459d8;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1746b5;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .line-btn {
+      background: #06c755;
+    }
+
+    .line-btn:hover {
+      background: #05a847;
+    }
+
+    .danger-btn {
+      background: #d63b3b;
+    }
+
+    .danger-btn:hover {
+      background: #b72b2b;
+    }
+
+    .secondary-btn {
+      background: #64748b;
+    }
+
+    .secondary-btn:hover {
+      background: #475569;
+    }
+
+    .hint {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+
+    .status.ok {
+      background: #e8f8ee;
+      color: #147a38;
+    }
+
+    .status.error {
+      background: #feecec;
+      color: #b42318;
+    }
+
+    pre {
+      background: #182133;
+      color: #def;
+      padding: 16px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid #ddd;
+      margin: 26px 0;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <h2>LINE LIFF 登入與帳號綁定</h2>
+
+  <div id="liffStatus" class="status">
+    LIFF 尚未初始化
+  </div>
+
+  <h3>基本設定</h3>
+
+  <label for="api">GAS Web App /exec URL</label>
+  <input
+    id="api"
+    type="url"
+    placeholder="https://script.google.com/macros/s/.../exec"
+  >
+
+  <label for="liffid">LIFF ID</label>
+  <input
+    id="liffid"
+    placeholder="1234567890-AbCdEfGh"
+  >
+
+  <button id="init" class="line-btn">
+    初始化 LIFF / LINE 授權
+  </button>
+
+  <hr>
+
+  <h3>LINE 登入</h3>
+
+  <p class="hint">
+    已完成 LINE 綁定的會員，可以直接透過 LINE 登入系統。
+  </p>
+
+  <button id="login" class="line-btn">
+    使用 LINE 登入
+  </button>
+
+  <hr>
+
+  <h3>LINE 帳號綁定</h3>
+
+  <p class="hint">
+    請先在一般登入頁使用帳號密碼登入，
+    再使用原本的 Session Token 綁定 LINE。
+    如果使用不同分頁，可能需要手動貼上 Token。
+  </p>
+
+  <label for="token">會員 Session Token（POC）</label>
+  <input
+    id="token"
+    type="password"
+    autocomplete="off"
+    placeholder="請輸入會員 Session Token"
+  >
+
+  <label for="password">再次輸入會員密碼</label>
+  <input
+    id="password"
+    type="password"
+    autocomplete="current-password"
+    placeholder="請輸入會員密碼"
+  >
+
+  <button id="bind" class="line-btn">
+    綁定目前 LINE 帳號
+  </button>
+
+  <button id="status" class="secondary-btn">
+    查詢 LINE 綁定狀態
+  </button>
+
+  <button id="unbind" class="danger-btn">
+    解除 LINE 綁定
+  </button>
+
+  <hr>
+
+  <h3>API 回應</h3>
+
+  <pre id="result">等待操作...</pre>
+
+</div>
+
 <script>
-const $=id=>document.getElementById(id);
-const show=o=>{$('result').textContent=JSON.stringify(o,null,2)};
-let initialized=false;
-$('api').value=sessionStorage.getItem('gas_url')||'';
-$('liffid').value=localStorage.getItem('liff_id')||'';
-$('token').value=sessionStorage.getItem('session_token')||'';
-async function callApi(action,extra={}){
- const api=$('api').value.trim(); if(!/^https:\/\/script\.google\.com\/macros\/s\//.test(api))throw Error('請填入 GAS /exec URL');
- sessionStorage.setItem('gas_url',api);
- const r=await fetch(api,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...extra})});
- if(!r.ok)throw Error('HTTP '+r.status);
- return r.json();
+"use strict";
+
+// =====================================================
+// 設定
+// =====================================================
+
+const $ = id => document.getElementById(id);
+
+let liffInitialized = false;
+let liffInitializing = null;
+
+// 正式部署時，可以直接寫入固定設定
+const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbydJd-dQlw1v1yPf9UCijKKK3nv_rhR4_WKxyJ3cyjCqHi-fffMNvB0PpzvpHPtZHrFow/exec";
+const DEFAULT_LIFF_ID = "2012126330-D7gu42yk";
+
+// =====================================================
+// 初始化頁面
+// =====================================================
+
+function initPage() {
+  $("api").value =
+    sessionStorage.getItem("gas_url") ||
+    DEFAULT_GAS_URL;
+
+  $("liffid").value =
+    localStorage.getItem("liff_id") ||
+    DEFAULT_LIFF_ID;
+
+  $("token").value =
+    sessionStorage.getItem("session_token") || "";
+
+  // 密碼不保存
+  $("password").value = "";
 }
-async function ensureLiff(){
- if(initialized)return;
- const id=$('liffid').value.trim(); if(!id)throw Error('請輸入 LIFF ID');
- localStorage.setItem('liff_id',id);
- await liff.init({liffId:id}); initialized=true;
- if(!liff.isLoggedIn()){liff.login({redirectUri:location.href.split('#')[0]});return false;}
- return true;
+
+// =====================================================
+// 顯示結果
+// =====================================================
+
+function show(data) {
+  // 避免直接顯示完整 Session Token
+  const safe = JSON.parse(JSON.stringify(data));
+
+  if (safe.token) {
+    safe.token = "[已隱藏]";
+  }
+
+  $("result").textContent =
+    JSON.stringify(safe, null, 2);
 }
-async function withLine(fn){try{if(!await ensureLiff())return;const id_token=liff.getIDToken();if(!id_token)throw Error('無 ID Token：請確認 LIFF 已啟用 openid scope');show(await fn(id_token));}catch(e){show({success:false,error:String(e)})}}
-$('init').onclick=()=>withLine(async()=>({success:true,message:'LIFF initialized'}));
-$('login').onclick=()=>withLine(async id_token=>{const r=await callApi('line_login',{id_token});if(r.success&&r.token){sessionStorage.setItem('session_token',r.token);$('token').value=r.token;}return r});
-$('bind').onclick=()=>withLine(id_token=>callApi('line_bind',{id_token,token:$('token').value.trim(),password:$('password').value}));
-$('status').onclick=async()=>{try{show(await callApi('line_status',{token:$('token').value.trim()}))}catch(e){show({error:String(e)})}};
-$('unbind').onclick=async()=>{try{show(await callApi('line_unbind',{token:$('token').value.trim(),password:$('password').value}))}catch(e){show({error:String(e)})}};
-</script></body></html>
+
+function setStatus(message, type = "") {
+  const el = $("liffStatus");
+
+  el.textContent = message;
+  el.className = "status";
+
+  if (type) {
+    el.classList.add(type);
+  }
+}
+
+function showError(error) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : String(error);
+
+  setStatus(message, "error");
+
+  show({
+    success: false,
+    error: message
+  });
+}
+
+// =====================================================
+// GAS API
+// =====================================================
+
+function getApiUrl() {
+  const api = $("api").value.trim();
+
+  if (!api) {
+    throw new Error("請填入 GAS Web App URL");
+  }
+
+  let url;
+
+  try {
+    url = new URL(api);
+  } catch {
+    throw new Error("GAS URL 格式錯誤");
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "script.google.com" ||
+    !/^\/macros\/s\/[^/]+\/exec\/?$/.test(url.pathname)
+  ) {
+    throw new Error("請填入有效的 GAS /exec URL");
+  }
+
+  sessionStorage.setItem("gas_url", api);
+
+  return api;
+}
+
+async function callApi(action, extra = {}) {
+  const api = getApiUrl();
+
+  const response = await fetch(api, {
+    method: "POST",
+    redirect: "follow",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify({
+      action,
+      ...extra
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      "GAS HTTP Error: " + response.status
+    );
+  }
+
+  const result = await response.json();
+
+  return result;
+}
+
+// =====================================================
+// LIFF 初始化
+// =====================================================
+
+async function ensureLiff() {
+  if (liffInitialized) {
+    return true;
+  }
+
+  if (liffInitializing) {
+    return liffInitializing;
+  }
+
+  liffInitializing = (async () => {
+    const liffId = $("liffid").value.trim();
+
+    if (!liffId) {
+      throw new Error("請輸入 LIFF ID");
+    }
+
+    if (typeof liff === "undefined") {
+      throw new Error("LINE LIFF SDK 載入失敗");
+    }
+
+    localStorage.setItem("liff_id", liffId);
+
+    setStatus("正在初始化 LINE LIFF...");
+
+    await liff.init({
+      liffId: liffId
+    });
+
+    liffInitialized = true;
+
+    if (!liff.isLoggedIn()) {
+      setStatus("正在前往 LINE 授權...");
+
+      liff.login({
+        redirectUri:
+          window.location.origin +
+          window.location.pathname
+      });
+
+      return false;
+    }
+
+    setStatus("LINE LIFF 已登入", "ok");
+
+    return true;
+  })();
+
+  try {
+    return await liffInitializing;
+  } finally {
+    liffInitializing = null;
+  }
+}
+
+// =====================================================
+// 取得 LINE ID Token
+// =====================================================
+
+async function withLine(callback) {
+  try {
+    const ready = await ensureLiff();
+
+    if (!ready) {
+      return;
+    }
+
+    const idToken = liff.getIDToken();
+
+    if (!idToken) {
+      throw new Error(
+        "無法取得 LINE ID Token，請確認 LIFF Scope 包含 openid"
+      );
+    }
+
+    const result = await callback(idToken);
+
+    show(result);
+
+    return result;
+
+  } catch (error) {
+    showError(error);
+  }
+}
+
+// =====================================================
+// 按鈕事件
+// =====================================================
+
+// 初始化
+$("init").addEventListener("click", async () => {
+  await withLine(async () => ({
+    success: true,
+    message: "LIFF 初始化成功",
+    isLoggedIn: liff.isLoggedIn(),
+    isInClient: liff.isInClient()
+  }));
+});
+
+// LINE 登入
+$("login").addEventListener("click", async () => {
+  await withLine(async idToken => {
+    const result = await callApi("line_login", {
+      id_token: idToken
+    });
+
+    if (
+      result.success === true &&
+      typeof result.token === "string" &&
+      result.token.length > 0 &&
+      result.member?.member_id
+    ) {
+      sessionStorage.setItem(
+        "session_token",
+        result.token
+      );
+
+      $("token").value = result.token;
+
+      setStatus("LINE 登入成功", "ok");
+    } else if (result.success) {
+      throw new Error(
+        "後端未回傳有效的登入資訊"
+      );
+    }
+
+    return result;
+  });
+});
+
+// LINE 綁定
+$("bind").addEventListener("click", async () => {
+  await withLine(async idToken => {
+    const token = $("token").value.trim();
+    const password = $("password").value;
+
+    if (!token) {
+      throw new Error("請輸入會員 Session Token");
+    }
+
+    if (!password) {
+      throw new Error("請輸入會員密碼");
+    }
+
+    const result = await callApi("line_bind", {
+      id_token: idToken,
+      token,
+      password
+    });
+
+    if (result.success) {
+      setStatus("LINE 帳號綁定成功", "ok");
+      $("password").value = "";
+    }
+
+    return result;
+  });
+});
+
+// 查詢綁定狀態
+$("status").addEventListener("click", async () => {
+  try {
+    const token = $("token").value.trim();
+
+    if (!token) {
+      throw new Error("請輸入會員 Session Token");
+    }
+
+    const result = await callApi("line_status", {
+      token
+    });
+
+    show(result);
+
+  } catch (error) {
+    showError(error);
+  }
+});
+
+// 解除綁定
+$("unbind").addEventListener("click", async () => {
+  try {
+    const token = $("token").value.trim();
+    const password = $("password").value;
+
+    if (!token || !password) {
+      throw new Error(
+        "解除綁定需要 Session Token 與會員密碼"
+      );
+    }
+
+    if (!confirm("確定解除目前的 LINE 帳號綁定？")) {
+      return;
+    }
+
+    const result = await callApi("line_unbind", {
+      token,
+      password
+    });
+
+    if (result.success) {
+      setStatus("LINE 帳號已解除綁定", "ok");
+      $("password").value = "";
+    }
+
+    show(result);
+
+  } catch (error) {
+    showError(error);
+  }
+});
+
+// =====================================================
+// 啟動
+// =====================================================
+
+initPage();
+
+</script>
+</body>
+</html>

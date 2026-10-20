@@ -1,23 +1,320 @@
-<!-- Add inside the existing <section id="memberPanel">, after the LINE binding section. -->
-<hr>
-<section id="hierarchyPanel" aria-labelledby="hierarchyHeading">
-  <h2 id="hierarchyHeading">會員階層管理</h2>
-  <p>僅顯示目前登入會員的所有下線。資料由 GAS Session 權限決定。</p>
-  <div class="actions">
-    <button type="button" id="hierarchyReload">載入／更新下線資料</button>
-    <button type="button" id="hierarchyExpand" class="muted">全部展開</button>
-    <button type="button" id="hierarchyCollapse" class="muted">全部收合</button>
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>會員階層管理</title>
+
+  <!-- 共用會員階層樣式 -->
+  <link rel="stylesheet" href="./member-hierarchy.css">
+
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif;
+      color: #172033;
+      background: #f4f6fb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: auto;
+      background: white;
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 10px 32px #17203310;
+    }
+
+    h1 { font-size: 25px; margin: 0 0 12px; }
+    h2 { font-size: 19px; margin: 24px 0 12px; }
+
+    p {
+      line-height: 1.65;
+      color: #556078;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    button {
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 9px;
+      background: #2559d8;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: wait;
+    }
+
+    .muted { background: #64748b; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 5px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cdd4df;
+      border-radius: 9px;
+      font-size: 15px;
+      background: white;
+    }
+
+    .hierarchy-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .hierarchy-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    .hierarchy-table th,
+    .hierarchy-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .hierarchy-table th {
+      background: #f8fafc;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    #hierarchyMessage {
+      color: #b45309;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .wrap { padding: 18px; }
+      .grid { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+
+<body>
+
+<main class="wrap">
+
+  <div class="topbar">
+    <h1>會員階層管理</h1>
+    <button type="button" id="backToMember" class="muted">
+      返回會員中心
+    </button>
   </div>
-  <p id="hierarchyMessage" role="status">請點擊「載入／更新下線資料」</p>
-  <h2>會員階層樹</h2>
-  <div id="hierarchyTree" class="hierarchy-tree"></div>
-  <h2>下線會員列表</h2>
-  <label for="hierarchySearch">搜尋姓名、會員 ID、直屬上線</label>
-  <input id="hierarchySearch" type="search" placeholder="輸入關鍵字">
-  <div class="grid">
-    <div><label for="hierarchyDepth">層級</label><select id="hierarchyDepth"><option value="">全部層級</option></select></div>
-    <div><label for="hierarchyStatus">狀態</label><select id="hierarchyStatus"><option value="">全部狀態</option><option value="active">active</option><option value="inactive">inactive</option></select></div>
-  </div>
-  <p id="hierarchyCount"></p>
-  <div class="hierarchy-table-wrap"><table class="hierarchy-table"><thead><tr><th>姓名</th><th>會員 ID</th><th>直屬上線</th><th>層級</th><th>狀態</th></tr></thead><tbody id="hierarchyRows"></tbody></table></div>
-</section>
+
+  <section id="hierarchyPanel" aria-labelledby="hierarchyHeading">
+
+    <h2 id="hierarchyHeading">我的會員組織</h2>
+
+    <p>
+      僅顯示目前登入會員的所有下線。
+      資料由 GAS Session 權限決定。
+    </p>
+
+    <div class="actions">
+      <button type="button" id="hierarchyReload">
+        載入／更新下線資料
+      </button>
+
+      <button type="button" id="hierarchyExpand" class="muted">
+        全部展開
+      </button>
+
+      <button type="button" id="hierarchyCollapse" class="muted">
+        全部收合
+      </button>
+    </div>
+
+    <p id="hierarchyMessage" role="status">
+      請點擊「載入／更新下線資料」
+    </p>
+
+    <hr>
+
+    <h2>會員階層樹</h2>
+
+    <div id="hierarchyTree" class="hierarchy-tree"></div>
+
+    <hr>
+
+    <h2>下線會員列表</h2>
+
+    <label for="hierarchySearch">
+      搜尋姓名、會員 ID、直屬上線
+    </label>
+
+    <input
+      id="hierarchySearch"
+      type="search"
+      placeholder="輸入關鍵字"
+    >
+
+    <div class="grid">
+      <div>
+        <label for="hierarchyDepth">層級</label>
+        <select id="hierarchyDepth">
+          <option value="">全部層級</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="hierarchyStatus">狀態</label>
+        <select id="hierarchyStatus">
+          <option value="">全部狀態</option>
+          <option value="active">active</option>
+          <option value="inactive">inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <p id="hierarchyCount"></p>
+
+    <div class="hierarchy-table-wrap">
+      <table class="hierarchy-table">
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>會員 ID</th>
+            <th>直屬上線</th>
+            <th>層級</th>
+            <th>狀態</th>
+          </tr>
+        </thead>
+
+        <tbody id="hierarchyRows"></tbody>
+      </table>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+  // 與 index.html 使用相同的 Session Storage Key
+  const TOKEN_KEY = 'member_session_token';
+
+  let sessionToken = sessionStorage.getItem(TOKEN_KEY) || '';
+
+  const $ = id => document.getElementById(id);
+
+  // 讀取原本登入頁面的 GAS URL
+  function gasUrl() {
+    const url = sessionStorage.getItem('gas_url');
+
+    if (!url) {
+      throw new Error('找不到 GAS API URL，請重新登入');
+    }
+
+    return url;
+  }
+
+  // 共用 GAS API
+  async function api(action, extra = {}) {
+    const response = await fetch(gasUrl(), {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action,
+        ...extra
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API HTTP ' + response.status);
+    }
+
+    return response.json();
+  }
+
+  // 驗證目前 Session
+  async function verifySession() {
+    if (!sessionToken) {
+      location.replace('./index.html');
+      return false;
+    }
+
+    try {
+      const result = await api('me', {
+        token: sessionToken
+      });
+
+      if (!result.success) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        location.replace('./index.html');
+        return false;
+      }
+
+      return true;
+
+    } catch (error) {
+      $('hierarchyMessage').textContent =
+        'Session 驗證失敗：' + error.message;
+
+      return false;
+    }
+  }
+
+  // 返回會員中心
+  $('backToMember').addEventListener('click', () => {
+    location.href = './index.html';
+  });
+
+  // 先驗證 Session，再載入下線資料
+  (async () => {
+    const valid = await verifySession();
+
+    if (valid) {
+      $('hierarchyMessage').textContent =
+        'Session 驗證成功，準備載入會員資料';
+    }
+  })();
+</script>
+
+<!-- 沿用原本的會員階層功能 -->
+<script src="./member-hierarchy.js"></script>
+
+</body>
+</html>

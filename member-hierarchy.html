@@ -230,91 +230,106 @@
 </main>
 
 <script>
-  // 與 index.html 使用相同的 Session Storage Key
-  const TOKEN_KEY = 'member_session_token';
+'use strict';
 
-  let sessionToken = sessionStorage.getItem(TOKEN_KEY) || '';
+const TOKEN_KEY = 'member_session_token';
 
-  const $ = id => document.getElementById(id);
+let sessionToken =
+  sessionStorage.getItem(TOKEN_KEY) || '';
 
-  // 讀取原本登入頁面的 GAS URL
-  function gasUrl() {
-    const url = sessionStorage.getItem('gas_url');
+const $ = id => document.getElementById(id);
 
-    if (!url) {
-      throw new Error('找不到 GAS API URL，請重新登入');
-    }
+function gasUrl() {
+  const url = sessionStorage.getItem('gas_url');
 
-    return url;
+  if (!url) {
+    throw new Error(
+      '找不到 GAS API URL，請重新登入'
+    );
   }
 
-  // 共用 GAS API
-  async function api(action, extra = {}) {
-    const response = await fetch(gasUrl(), {
-      method: 'POST',
-      redirect: 'follow',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({
-        action,
-        ...extra
-      })
-    });
+  return url;
+}
 
-    if (!response.ok) {
-      throw new Error('API HTTP ' + response.status);
-    }
-
-    return response.json();
-  }
-
-  // 驗證目前 Session
-  async function verifySession() {
-    if (!sessionToken) {
-      location.replace('./index.html');
-      return false;
-    }
-
-    try {
-      const result = await api('me', {
-        token: sessionToken
-      });
-
-      if (!result.success) {
-        sessionStorage.removeItem(TOKEN_KEY);
-        location.replace('./index.html');
-        return false;
-      }
-
-      return true;
-
-    } catch (error) {
-      $('hierarchyMessage').textContent =
-        'Session 驗證失敗：' + error.message;
-
-      return false;
-    }
-  }
-
-  // 返回會員中心
-  $('backToMember').addEventListener('click', () => {
-    location.href = './index.html';
+async function api(action, extra = {}) {
+  const response = await fetch(gasUrl(), {
+    method: 'POST',
+    redirect: 'follow',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify({
+      action,
+      ...extra
+    })
   });
 
-  // 先驗證 Session，再載入下線資料
-  (async () => {
-    const valid = await verifySession();
+  if (!response.ok) {
+    throw new Error(
+      'API HTTP ' + response.status
+    );
+  }
 
-    if (valid) {
-      $('hierarchyMessage').textContent =
-        'Session 驗證成功，準備載入會員資料';
-    }
-  })();
+  return response.json();
+}
+
+async function verifySession() {
+  if (!sessionToken) {
+    location.replace('./index.html');
+    return false;
+  }
+
+  const result = await api('me', {
+    token: sessionToken
+  });
+
+  if (!result.success) {
+    sessionStorage.removeItem(TOKEN_KEY);
+    location.replace('./index.html');
+    return false;
+  }
+
+  return true;
+}
+
+$('backToMember').addEventListener(
+  'click',
+  () => {
+    location.href = './index.html';
+  }
+);
 </script>
 
-<!-- 沿用原本的會員階層功能 -->
+<!-- 必須先載入會員階層模組 -->
 <script src="./member-hierarchy.js"></script>
+
+<!-- 最後執行初始化 -->
+<script>
+(async () => {
+  try {
+    const valid = await verifySession();
+
+    if (!valid) return;
+
+    console.log('[PAGE] Session verified');
+
+    if (!window.Stage8Hierarchy) {
+      throw new Error(
+        'Stage8Hierarchy 模組未載入'
+      );
+    }
+
+    // Session 驗證成功後自動載入
+    await window.Stage8Hierarchy.load();
+
+  } catch (error) {
+    console.error('[PAGE] Error:', error);
+
+    $('hierarchyMessage').textContent =
+      '初始化失敗：' + error.message;
+  }
+})();
+</script>
 
 </body>
 </html>

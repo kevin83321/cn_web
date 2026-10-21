@@ -443,4 +443,368 @@ async function lineToken() {
 
   const idToken = liff.getIDToken();
 
-  if (!id
+  if (!idToken || tokenExpired(idToken)) {
+    liff.logout();
+
+    liffReady = false;
+
+    notice('LINE 授權已過期，請重新登入 LINE');
+
+    await liff.init({
+      liffId: $('liffid').value.trim()
+    });
+
+    liffReady = true;
+
+    liff.login({
+      redirectUri:
+        location.origin +
+        location.pathname +
+        location.search
+    });
+
+    return null;
+  }
+
+  return idToken;
+}
+
+
+// ============================================================
+// 8. LINE 綁定狀態
+// ============================================================
+
+async function checkBinding(render = true) {
+  const result = await api('line_status', {
+    token: sessionToken
+  });
+
+  if (render) {
+    display(result);
+  }
+
+  if (!result.success) {
+    if (result.error === 'UNAUTHORIZED') {
+      showLoggedOut();
+      notice('Session 已失效');
+
+    } else {
+      notice(result.error || '查詢失敗');
+    }
+
+    return;
+  }
+
+  $('bindInfo').textContent = result.bound
+    ? 'LINE 綁定狀態：已綁定'
+    : 'LINE 綁定狀態：尚未綁定';
+}
+
+
+// ============================================================
+// 9. 設定、登入與 LINE 操作
+// ============================================================
+
+$('saveSettings').onclick = () =>
+  run(async () => saveSettings());
+
+$('loginForm').onsubmit = e => {
+  e.preventDefault();
+
+  run(async () => {
+    const result = await api('login', {
+      username: $('username').value.trim(),
+      password: $('password').value
+    });
+
+    await acceptLogin(result);
+  });
+};
+
+$('lineLogin').onclick = () =>
+  run(async () => {
+    const id_token = await lineToken();
+
+    if (!id_token) return;
+
+    const result = await api('line_login', {
+      id_token
+    });
+
+    await acceptLogin(result);
+  });
+
+$('refresh').onclick = () =>
+  run(restore);
+
+$('openHierarchy').onclick = () => {
+  if (!sessionToken) {
+    notice('請先登入會員');
+    return;
+  }
+
+  sessionStorage.setItem(
+    'gas_url',
+    gasUrl()
+  );
+
+  window.location.assign(
+    './member-hierarchy.html'
+  );
+};
+
+$('openCustomerManagement').onclick = () => {
+  if (!sessionToken) {
+    notice('請先登入會員');
+    return;
+  }
+
+  sessionStorage.setItem(
+    'gas_url',
+    gasUrl()
+  );
+
+  window.location.assign(
+    './customer-management.html'
+  );
+};
+
+$('checkBind').onclick = () =>
+  run(() => checkBinding(true));
+
+$('bind').onclick = () =>
+  run(async () => {
+    if (!sessionToken) {
+      throw Error('請先登入會員');
+    }
+
+    const password = $('confirmPassword').value;
+
+    if (!password) {
+      throw Error('請輸入會員密碼');
+    }
+
+    const id_token = await lineToken();
+
+    if (!id_token) return;
+
+    const result = await api('line_bind', {
+      token: sessionToken,
+      password,
+      id_token
+    });
+
+    display(result);
+
+    $('confirmPassword').value = '';
+
+    if (result.success) {
+      notice('LINE 綁定成功');
+      await checkBinding(false);
+
+    } else {
+      notice(
+        '綁定失敗：' +
+        (result.error || '未知錯誤')
+      );
+    }
+  });
+
+$('unbind').onclick = () =>
+  run(async () => {
+    if (!sessionToken) {
+      throw Error('請先登入會員');
+    }
+
+    const password = $('confirmPassword').value;
+
+    if (!password) {
+      throw Error('請輸入會員密碼');
+    }
+
+    if (
+      !confirm(
+        '確定解除 LINE 綁定？解除後將無法使用 LINE 登入，直到重新綁定。'
+      )
+    ) {
+      return;
+    }
+
+    const result = await api('line_unbind', {
+      token: sessionToken,
+      password
+    });
+
+    display(result);
+
+    $('confirmPassword').value = '';
+
+    if (result.success) {
+      notice('已解除 LINE 綁定');
+      await checkBinding(false);
+
+    } else {
+      notice(
+        '解除失敗：' +
+        (result.error || '未知錯誤')
+      );
+    }
+  });
+
+$('logout').onclick = () =>
+  run(async () => {
+    const token = sessionToken;
+
+    showLoggedOut();
+
+    try {
+      const result = await api('logout', {
+        token
+      });
+
+      display(result);
+
+      notice(
+        result.success
+          ? '已登出'
+          : '已清除本機登入狀態，後端登出回應：' +
+            (result.error || '失敗')
+      );
+
+    } catch (error) {
+      notice(
+        '已清除本機登入狀態；無法確認伺服器 Session 是否撤銷：' +
+        error.message
+      );
+    }
+  });
+
+
+// ============================================================
+// 10. 會員資料
+// ============================================================
+
+$('memberSelf').onclick = () =>
+  run(async () => {
+    if (!sessionToken) {
+      throw Error('請先登入會員');
+    }
+
+    const result = await api('member_self', {
+      token: sessionToken
+    });
+
+    display(result);
+
+    $('downlineSummary').textContent =
+      result.success
+        ? '會員資料查詢成功'
+        : '查詢失敗：' +
+          (result.error || '未知錯誤');
+
+    $('downlineResult').textContent =
+      JSON.stringify(result, null, 2);
+  });
+
+$('memberDownline').onclick = () =>
+  run(async () => {
+    if (!sessionToken) {
+      throw Error('請先登入會員');
+    }
+
+    const result = await api('member_downline', {
+      token: sessionToken
+    });
+
+    display(result);
+
+    const list = Array.isArray(result.members)
+      ? result.members
+      : Array.isArray(result.downline)
+        ? result.downline
+        : Array.isArray(result.data)
+          ? result.data
+          : null;
+
+    $('downlineSummary').textContent =
+      !result.success
+        ? '查詢失敗：' +
+          (result.error || '未知錯誤')
+        : list
+          ? '查詢成功，共 ' +
+            list.length +
+            ' 名下線會員'
+          : '查詢成功（請檢查回應欄位結構）';
+
+    $('downlineResult').textContent =
+      JSON.stringify(result, null, 2);
+  });
+
+
+// ============================================================
+// 11. Stage 9B API 測試
+// ============================================================
+
+const stage9Actions = {
+  testAdminMembers: 'admin_members',
+  testMemberCustomers: 'member_customers',
+  testAdminAuditLogs: 'admin_audit_logs'
+};
+
+Object.entries(stage9Actions).forEach(
+  ([buttonId, action]) => {
+    $(buttonId).addEventListener(
+      'click',
+      () => run(async () => {
+        if (!sessionToken) {
+          throw Error('請先登入會員');
+        }
+
+        const payload = {
+          token: sessionToken
+        };
+
+        if (action === 'admin_audit_logs') {
+          payload.limit = 20;
+        }
+
+        const response = await api(
+          action,
+          payload
+        );
+
+        display(response);
+
+        $('stage9Result').textContent =
+          JSON.stringify(
+            redactSecrets(response),
+            null,
+            2
+          );
+
+        $('stage9Status').textContent =
+          response.success
+            ? action + ' 查詢成功'
+            : action +
+              ' 查詢失敗：' +
+              (response.error || '未知錯誤');
+      })
+    );
+  }
+);
+
+
+// ============================================================
+// 12. 初始化
+// ============================================================
+
+if (sessionToken) {
+  run(restore);
+} else {
+  showLoggedOut();
+}
+
+console.log(
+  '[APP] index.js loaded. ' +
+  '使用 apiPerfReport() 查看 API 效能統計。'
+);

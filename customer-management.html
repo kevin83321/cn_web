@@ -5,8 +5,20 @@
 <p id="authStatus" role="status">正在驗證登入狀態…</p>
 <section id="customerPanel" class="hidden">
 <section class="card"><h2>目前服務客戶</h2><p>依目前登入帳號的後端權限查詢。</p><div class="actions"><button type="button" id="loadCustomers">更新客戶清單</button></div><p id="customerCount" role="status"></p><div class="table-scroll"><table><thead><tr><th>會員 ID</th><th>姓名</th><th>主要服務直銷商</th><th>狀態</th></tr></thead><tbody id="customerRows"><tr><td colspan="4">尚未查詢</td></tr></tbody></table></div></section>
-<section class="card"><h2>指定主要服務直銷商</h2><form id="assignForm"><label for="assignCustomer">客戶會員 ID</label><input id="assignCustomer" required autocomplete="off" placeholder="M..."><label for="assignDistributor">服務直銷商會員 ID</label><input id="assignDistributor" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit">建立服務關係</button></div></form></section>
-<section class="card"><h2>轉移服務直銷商</h2><form id="transferForm"><label for="transferCustomer">客戶會員 ID</label><input id="transferCustomer" required autocomplete="off" placeholder="M..."><label for="transferDistributor">新服務直銷商會員 ID</label><input id="transferDistributor" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit">確認轉移</button></div></form></section>
+<section class="card" id="directorySection">
+<h2>搜尋既有客戶</h2><p>搜尋目前有權查看的非會員／生活會員，選取後即可指定服務。</p>
+<form id="searchCustomerForm" class="inline-form"><label for="customerQuery">姓名或會員 ID（至少 2 字）</label><input id="customerQuery" placeholder="輸入姓名或會員 ID" required minlength="2"><button type="submit">搜尋客戶</button></form>
+<p id="searchCustomerStatus" role="status"></p><div class="table-scroll"><table><thead><tr><th>會員 ID</th><th>姓名</th><th>類型</th><th>服務狀態</th><th>操作</th></tr></thead><tbody id="searchCustomerRows"><tr><td colspan="5">尚未搜尋</td></tr></tbody></table></div>
+</section>
+<section class="card"><h2>新增會員</h2><p>建立新會員時會同時建立上線關係；非會員／生活會員也會指定主要服務直銷商。</p>
+<form id="createMemberForm"><label for="createName">姓名</label><input id="createName" required maxlength="100" placeholder="輸入姓名">
+<label for="createRole">會員類型</label><select id="createRole"><option value="non_member" selected>非會員（預設）</option><option value="lifestyle">生活會員</option><option value="distributor">直銷商</option></select>
+<label for="createParent">直屬上線（會員 ID）</label><select id="createParent" required></select>
+<div id="createServiceBox"><label for="createDistributor">主要服務直銷商</label><select id="createDistributor" required></select></div>
+<p class="form-help">一般直銷商建立會員時，上線及服務者固定為本人；Admin 可選擇直銷商。新會員不會自動建立登入帳號。</p>
+<div class="actions"><button type="submit">建立會員</button><button type="button" class="muted" id="refreshDistributors">更新直銷商選單</button></div></form></section>
+<section class="card"><h2>指定主要服務直銷商</h2><form id="assignForm"><label for="assignCustomer">客戶會員 ID</label><input id="assignCustomer" required autocomplete="off" placeholder="M..."><label for="assignDistributor">服務直銷商會員 ID</label><select id="assignDistributor" required></select><div class="actions"><button type="submit">建立服務關係</button></div></form></section>
+<section class="card"><h2>轉移服務直銷商</h2><form id="transferForm"><label for="transferCustomer">客戶會員 ID</label><input id="transferCustomer" required autocomplete="off" placeholder="M..."><label for="transferDistributor">新服務直銷商會員 ID</label><select id="transferDistributor" required></select><div class="actions"><button type="submit">確認轉移</button></div></form></section>
 <section class="card"><h2>結束服務關係</h2><form id="endForm"><label for="endCustomer">客戶會員 ID</label><input id="endCustomer" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit" class="danger">結束服務</button></div></form></section>
 <section class="card"><h2>服務歷史</h2><form id="historyForm"><label for="historyCustomer">客戶會員 ID</label><input id="historyCustomer" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit" class="muted">查詢歷史</button></div></form><pre id="historyResult">尚未查詢</pre></section>
 <section class="card"><h2>API 測試結果</h2><p id="actionStatus" role="status" aria-live="polite"></p><pre id="apiResult">等待操作</pre></section>

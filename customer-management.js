@@ -4,6 +4,9 @@
   const token = sessionStorage.getItem('member_session_token') || '';
   const gasUrl = sessionStorage.getItem('gas_url') || '';
   let busy = false;
+  let actorId = "";
+  let actorIsAdmin = false;
+  let distributors = [];
   const secretPattern = /^(token|id_token|password|password_hash|salt|token_hash)$/i;
   function sanitize(value) {
     if (Array.isArray(value)) return value.map(sanitize);
@@ -33,6 +36,58 @@
     finally { setBusy(false); }
   }
   function get(id) { return $(id).value.trim(); }
+  function fillSelect(id, items, selected) {
+    const el=$(id); const previous=selected||el.value; el.replaceChildren();
+    const empty=new Option('請選擇直銷商','');el.add(empty);
+    items.forEach(m=>el.add(new Option((m.name||'未命名')+'（'+m.member_id+'）',m.member_id)));
+    if(items.some(m=>m.member_id===previous))el.value=previous;
+    else if(!actorIsAdmin && items.some(m=>m.member_id===actorId))el.value=actorId;
+  }
+  async function loadDistributors() {
+    const r=await api('distributor_search');
+    if(!r.success)throw Error(r.error||'DISTRIBUTOR_SEARCH_FAILED');
+    distributors=r.members||[];
+    ['createParent','createDistributor','assignDistributor','transferDistributor'].forEach(id=>fillSelect(id,distributors));
+    if(!actorIsAdmin) {
+      $('createParent').value=actorId;
+      $('createDistributor').value=actorId;
+      $('createParent').disabled=true;
+      $('createDistributor').disabled=true;
+    }
+  }
+  function updateRoleFields() {
+    const distributor=get('createRole')==='distributor';
+    $('createServiceBox').classList.toggle('hidden',distributor);
+    $('createDistributor').required=!distributor;
+  }
+  function showSearchResult(r) {
+    const rows=$('searchCustomerRows');rows.replaceChildren();
+    $('searchCustomerStatus').textContent='找到 '+(r.members||[]).length+' 位會員';
+    if(!(r.members||[]).length) {const td=rows.insertRow().insertCell();td.colSpan=5;td.textContent='沒有符合條件的會員';return;}
+    r.members.forEach(m=>{
+      const tr=rows.insertRow();
+      [m.member_id,m.name,m.role,m.service_status==='assigned'?'已指定：'+m.distributor_member_id:m.service_status==='duplicate'?'資料異常：重複服務':'尚未指定'].forEach(value=>{tr.insertCell().textContent=String(value||'');});
+      const cell=tr.insertCell();const b=document.createElement('button');b.type='button';b.textContent='選取';b.className='muted';
+      b.onclick=()=>{$('assignCustomer').value=m.member_id;if(m.service_status==='assigned'){$('transferCustomer').value=m.member_id;$('endCustomer').value=m.member_id;}$('historyCustomer').value=m.member_id;status('已選取 '+m.name+'（'+m.member_id+'）');};cell.appendChild(b);
+    });
+  }
+  $('searchCustomerForm').onsubmit=e=>{e.preventDefault();execute('customer_search',{query:get('customerQuery')},showSearchResult);};
+  $('refreshDistributors').onclick=async()=>{if(busy)return;setBusy(true);try{await loadDistributors();status('已更新直銷商清單');}catch(e){status('查詢失敗：'+e.message);}finally{setBusy(false);}};
+  $('createRole').onchange=updateRoleFields;
+  $('createMemberForm').onsubmit=e=>{
+    e.preventDefault();const name=get('createName'),role=get('createRole');
+    const parent_member_id=actorIsAdmin?get('createParent'):actorId;
+    const distributor_member_id=actorIsAdmin?get('createDistributor'):actorId;
+    if(!parent_member_id||(role!=='distributor'&&!distributor_member_id)){status('請選擇上線與服務直銷商');return;}
+    if(!confirmChange('建立 '+name+'（'+role+'）'))return;
+    execute('customer_create',{name,role,parent_member_id,distributor_member_id},async r=>{
+      $('createMemberForm').reset();updateRoleFields();await loadDistributors();
+      if(r.member){$('assignCustomer').value=r.member.member_id;$('historyCustomer').value=r.member.member_id;}
+      status('建立成功：'+(r.member?.member_id||'')+(r.service_created?'（已指定服務）':'（直銷商已建立）'));
+      try {const customers=await api('member_customers');if(customers.success)renderCustomers(customers);}catch(e){console.warn('CUSTOMER_REFRESH_FAILED',e);}
+    });
+  };
+
   function confirmChange(text) { return window.confirm(text+'\n\n此操作將修改 Google Sheets 資料，確定繼續？'); }
   function renderCustomers(result) {
     // Different backend versions may return members/customers/data.
@@ -56,7 +111,7 @@
   $('historyForm').onsubmit=e=>{e.preventDefault();execute('customer_service_history',{customer_member_id:get('historyCustomer')},r=>{$('historyResult').textContent=JSON.stringify(sanitize(r),null,2);});};
   (async()=>{
     if (!token||!gasUrl) { $('authStatus').textContent='尚未登入或缺少 GAS URL，請返回會員中心。'; return; }
-    try {const r=await api('me');if(!r.success)throw Error(r.error||'SESSION_INVALID');$('authStatus').textContent='已登入：'+(r.member?.name||r.member?.member_id||'會員');$('customerPanel').classList.remove('hidden');}
+    try {const r=await api('me');if(!r.success)throw Error(r.error||'SESSION_INVALID');$('authStatus').textContent='已登入：'+(r.member?.name||r.member?.member_id||'會員');actorId=r.member?.member_id||'';const self=await api('member_self');actorIsAdmin=!!(self.member?.system_admin||self.system_admin||r.member?.system_admin);const admins=await api('admin_members');if(admins.success)actorIsAdmin=true;$('customerPanel').classList.remove('hidden');updateRoleFields();await loadDistributors();}
     catch(e){$('authStatus').textContent='無法驗證 Session：'+e.message;}
   })();
 })();

@@ -8,7 +8,7 @@
 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<link rel="stylesheet" href="member-hierarchy.css">
+
 
 <title>會員登入｜帳密與 LINE</title>
 
@@ -26,7 +26,7 @@
 
 <section id="loginPanel"><h2>帳號密碼登入</h2><form id="loginForm"><label for="username">帳號</label><input id="username" autocomplete="username" required><label for="password">密碼</label><input id="password" type="password" autocomplete="current-password" required><div class="actions"><button type="submit">登入</button></div></form><hr><h2>LINE 登入</h2><div class="actions"><button id="lineLogin" class="line" type="button">使用 LINE 登入</button></div><small>第一次使用 LINE 登入，請先用帳密登入，再到會員中心綁定 LINE。</small></section>
 
-<section id="memberPanel" class="hidden"><h2>會員中心 <span class="pill">已登入</span></h2><p id="memberInfo"></p><p id="expiresInfo"></p><div class="actions"><button id="refresh" type="button">驗證 Session／更新會員資料</button><button id="openHierarchy" type="button">查看會員階層</button><button id="logout" class="muted" type="button">登出</button></div><hr><h2>LINE 帳號綁定</h2><p id="bindInfo">讀取中…</p><label for="confirmPassword">會員密碼（綁定或解除綁定時需再次確認）</label><input id="confirmPassword" type="password" autocomplete="off"><div class="actions"><button id="bind" class="line" type="button">綁定目前 LINE 帳號</button><button id="unbind" class="danger" type="button">解除 LINE 綁定</button><button id="checkBind" class="muted" type="button">查詢綁定狀態</button></div>
+<section id="memberPanel" class="hidden"><h2>會員中心 <span class="pill">已登入</span></h2><p id="memberInfo"></p><p id="expiresInfo"></p><div class="actions"><button id="refresh" type="button">驗證 Session／更新會員資料</button><button id="openHierarchy" type="button">查看會員階層</button><button id="openCustomerManagement" type="button">服務客戶管理</button><button id="logout" class="muted" type="button">登出</button></div><hr><h2>LINE 帳號綁定</h2><p id="bindInfo">讀取中…</p><label for="confirmPassword">會員密碼（綁定或解除綁定時需再次確認）</label><input id="confirmPassword" type="password" autocomplete="off"><div class="actions"><button id="bind" class="line" type="button">綁定目前 LINE 帳號</button><button id="unbind" class="danger" type="button">解除 LINE 綁定</button><button id="checkBind" class="muted" type="button">查詢綁定狀態</button></div>
 
 <hr>
 

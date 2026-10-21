@@ -85,6 +85,8 @@ $('lineLogin').onclick=()=>run(async()=>{const id_token=await lineToken();if(!id
 $('refresh').onclick=()=>run(restore);
 $('openHierarchy').onclick=()=>{if(!sessionToken){notice('請先登入會員');return;}sessionStorage.setItem('gas_url',gasUrl());window.location.assign('./member-hierarchy.html');};
 
+$('openCustomerManagement').onclick=()=>{if(!sessionToken){notice('請先登入會員');return;}sessionStorage.setItem('gas_url',gasUrl());window.location.assign('./customer-management.html');};
+
 $('checkBind').onclick=()=>run(()=>checkBinding(true));
 
 $('bind').onclick=()=>run(async()=>{if(!sessionToken)throw Error('請先登入會員');const password=$('confirmPassword').value;if(!password)throw Error('請輸入會員密碼');const id_token=await lineToken();if(!id_token)return;const r=await api('line_bind',{token:sessionToken,password,id_token});display(r);$('confirmPassword').value='';if(r.success){notice('LINE 綁定成功');await checkBinding(false);}else notice('綁定失敗：'+(r.error||'未知錯誤'));});

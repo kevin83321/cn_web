@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>服務客戶管理</title><link rel="stylesheet" href="./index.css"><link rel="stylesheet" href="./customer-management.css"></head>
+<body><main class="wrap customer-wrap">
+<header class="page-header"><div><h1>服務客戶管理</h1><p>Stage 9B-2｜每位客戶同時間僅有一位主要服務直銷商</p></div><button id="backToMember" class="muted" type="button">返回會員中心</button></header>
+<p id="authStatus" role="status">正在驗證登入狀態…</p>
+<section id="customerPanel" class="hidden">
+<section class="card"><h2>目前服務客戶</h2><p>依目前登入帳號的後端權限查詢。</p><div class="actions"><button type="button" id="loadCustomers">更新客戶清單</button></div><p id="customerCount" role="status"></p><div class="table-scroll"><table><thead><tr><th>會員 ID</th><th>姓名</th><th>主要服務直銷商</th><th>狀態</th></tr></thead><tbody id="customerRows"><tr><td colspan="4">尚未查詢</td></tr></tbody></table></div></section>
+<section class="card"><h2>指定主要服務直銷商</h2><form id="assignForm"><label for="assignCustomer">客戶會員 ID</label><input id="assignCustomer" required autocomplete="off" placeholder="M..."><label for="assignDistributor">服務直銷商會員 ID</label><input id="assignDistributor" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit">建立服務關係</button></div></form></section>
+<section class="card"><h2>轉移服務直銷商</h2><form id="transferForm"><label for="transferCustomer">客戶會員 ID</label><input id="transferCustomer" required autocomplete="off" placeholder="M..."><label for="transferDistributor">新服務直銷商會員 ID</label><input id="transferDistributor" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit">確認轉移</button></div></form></section>
+<section class="card"><h2>結束服務關係</h2><form id="endForm"><label for="endCustomer">客戶會員 ID</label><input id="endCustomer" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit" class="danger">結束服務</button></div></form></section>
+<section class="card"><h2>服務歷史</h2><form id="historyForm"><label for="historyCustomer">客戶會員 ID</label><input id="historyCustomer" required autocomplete="off" placeholder="M..."><div class="actions"><button type="submit" class="muted">查詢歷史</button></div></form><pre id="historyResult">尚未查詢</pre></section>
+<section class="card"><h2>API 測試結果</h2><p id="actionStatus" role="status" aria-live="polite"></p><pre id="apiResult">等待操作</pre></section>
+</section></main><script src="./customer-management.js" defer></script></body></html>

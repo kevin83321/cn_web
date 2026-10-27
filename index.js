@@ -12,33 +12,20 @@ const CONFIG = {
 };
 
 const TOKEN_KEY = 'member_session_token';
+const MANUAL_LOGOUT_KEY = 'member_manual_logout';
 
-let sessionToken =
-  sessionStorage.getItem(TOKEN_KEY) || '';
-
+let sessionToken = localStorage.getItem(TOKEN_KEY) || '';
 let liffReady = false;
 let busy = false;
 
-$('api').value =
-  CONFIG.gasUrl ||
-  sessionStorage.getItem('gas_url') ||
-  '';
-
-$('liffid').value =
-  CONFIG.liffId ||
-  localStorage.getItem('liff_id') ||
-  '';
-
+$('api').value = CONFIG.gasUrl || sessionStorage.getItem('gas_url') || '';
+$('liffid').value = CONFIG.liffId || localStorage.getItem('liff_id') || '';
 
 // ============================================================
 // 2. API 效能監控
 // ============================================================
 
-// 儲存目前頁面的 API 效能紀錄。
-// 不會上傳到 GAS，也不會寫入 Google Sheets。
 const apiPerformanceRecords = [];
-
-// 是否在 Console 顯示每次 API 耗時。
 const API_PERFORMANCE_LOG = true;
 
 function recordApiPerformance(record) {
@@ -55,7 +42,6 @@ function recordApiPerformance(record) {
   );
 }
 
-// 查看所有 API 效能紀錄。
 function apiPerfReport() {
   if (!apiPerformanceRecords.length) {
     console.log('目前沒有 API 效能紀錄');
@@ -101,25 +87,19 @@ function apiPerfReport() {
   return report;
 }
 
-// 查看每次 API 的原始耗時紀錄。
 function apiPerfDetails() {
   console.table(apiPerformanceRecords);
-
   return apiPerformanceRecords.slice();
 }
 
-// 清除效能紀錄。
 function apiPerfClear() {
   apiPerformanceRecords.length = 0;
-
   console.log('API 效能紀錄已清除');
 }
 
-// 方便在 Chrome DevTools Console 直接呼叫。
 window.apiPerfReport = apiPerfReport;
 window.apiPerfDetails = apiPerfDetails;
 window.apiPerfClear = apiPerfClear;
-
 
 // ============================================================
 // 3. 共用 UI 函式
@@ -174,7 +154,6 @@ async function run(fn) {
 
   try {
     await fn();
-
   } catch (e) {
     const message = e.message || String(e);
 
@@ -186,12 +165,10 @@ async function run(fn) {
     });
 
     console.error('[APP ERROR]', e);
-
   } finally {
     setBusy(false);
   }
 }
-
 
 // ============================================================
 // 4. GAS 設定
@@ -220,7 +197,6 @@ function saveSettings() {
 
   notice('設定已儲存');
 }
-
 
 // ============================================================
 // 5. 共用 API — POST + 效能量測
@@ -253,7 +229,6 @@ async function api(action, extra = {}) {
 
     const result = await response.json();
 
-    // 偵測是否意外取得 GAS 預設 GET 回應。
     if (
       result &&
       result.method === 'GET' &&
@@ -289,7 +264,6 @@ async function api(action, extra = {}) {
   }
 }
 
-
 // ============================================================
 // 6. 登入狀態
 // ============================================================
@@ -309,10 +283,12 @@ function showLoggedIn(member, expires) {
     : '';
 }
 
-function showLoggedOut() {
-  sessionToken = '';
-
-  sessionStorage.removeItem(TOKEN_KEY);
+function showLoggedOut({ clearToken = true } = {}) {
+  if (clearToken) {
+    sessionToken = '';
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+  }
 
   $('memberPanel').classList.add('hidden');
   $('loginPanel').classList.remove('hidden');
@@ -324,10 +300,9 @@ function showLoggedOut() {
   $('downlineResult').textContent = '尚未查詢會員階層';
 }
 
-async function restore() {
+async function restore({ showError = true } = {}) {
   if (!sessionToken) {
-    showLoggedOut();
-    return;
+    return false;
   }
 
   const result = await api('me', {
@@ -337,9 +312,22 @@ async function restore() {
   display(result);
 
   if (!result.success) {
-    showLoggedOut();
-    notice('Session 已失效，請重新登入');
-    return;
+    if (
+      result.error === 'UNAUTHORIZED' ||
+      result.error === 'SESSION_EXPIRED' ||
+      result.error === 'INVALID_SESSION'
+    ) {
+      sessionToken = '';
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+
+    if (showError) {
+      showLoggedOut();
+      notice('Session 已失效，請重新登入');
+    }
+
+    return false;
   }
 
   showLoggedIn(
@@ -347,7 +335,7 @@ async function restore() {
     result.expires_at
   );
 
-  await checkBinding(false);
+  return true;
 }
 
 async function acceptLogin(result) {
@@ -359,24 +347,22 @@ async function acceptLogin(result) {
       (result.error || '未知錯誤')
     );
 
-    return;
+    return false;
   }
 
   sessionToken = result.token;
 
-  sessionStorage.setItem(
-    TOKEN_KEY,
-    sessionToken
-  );
+  localStorage.setItem(TOKEN_KEY, sessionToken);
+  sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(MANUAL_LOGOUT_KEY);
 
   sessionStorage.setItem(
     'gas_url',
     gasUrl()
   );
 
-  await restore();
+  return await restore();
 }
-
 
 // ============================================================
 // 7. LINE LIFF
@@ -469,7 +455,6 @@ async function lineToken() {
   return idToken;
 }
 
-
 // ============================================================
 // 8. LINE 綁定狀態
 // ============================================================
@@ -487,7 +472,6 @@ async function checkBinding(render = true) {
     if (result.error === 'UNAUTHORIZED') {
       showLoggedOut();
       notice('Session 已失效');
-
     } else {
       notice(result.error || '查詢失敗');
     }
@@ -499,7 +483,6 @@ async function checkBinding(render = true) {
     ? 'LINE 綁定狀態：已綁定'
     : 'LINE 綁定狀態：尚未綁定';
 }
-
 
 // ============================================================
 // 9. 設定、登入與 LINE 操作
@@ -601,7 +584,6 @@ $('bind').onclick = () =>
     if (result.success) {
       notice('LINE 綁定成功');
       await checkBinding(false);
-
     } else {
       notice(
         '綁定失敗：' +
@@ -642,7 +624,6 @@ $('unbind').onclick = () =>
     if (result.success) {
       notice('已解除 LINE 綁定');
       await checkBinding(false);
-
     } else {
       notice(
         '解除失敗：' +
@@ -654,6 +635,8 @@ $('unbind').onclick = () =>
 $('logout').onclick = () =>
   run(async () => {
     const token = sessionToken;
+
+    localStorage.setItem(MANUAL_LOGOUT_KEY, '1');
 
     showLoggedOut();
 
@@ -678,7 +661,6 @@ $('logout').onclick = () =>
       );
     }
   });
-
 
 // ============================================================
 // 10. 會員資料
@@ -740,7 +722,6 @@ $('memberDownline').onclick = () =>
       JSON.stringify(result, null, 2);
   });
 
-
 // ============================================================
 // 11. Stage 9B API 測試
 // ============================================================
@@ -793,16 +774,93 @@ Object.entries(stage9Actions).forEach(
   }
 );
 
-
 // ============================================================
-// 12. 初始化
+// 12. LIFF 自動登入初始化
 // ============================================================
 
-if (sessionToken) {
-  run(restore);
-} else {
-  showLoggedOut();
+async function initializeAuth() {
+  console.log('[AUTH] 初始化登入狀態');
+
+  // 使用者主動登出後，不自動登入。
+  if (localStorage.getItem(MANUAL_LOGOUT_KEY) === '1') {
+    console.log('[AUTH] Manual logout detected');
+    showLoggedOut();
+    return;
+  }
+
+  // 優先恢復既有 GAS Session。
+  if (sessionToken) {
+    try {
+      const restored = await restore({
+        showError: false
+      });
+
+      if (restored) {
+        console.log('[AUTH] Existing GAS session restored');
+        return;
+      }
+    } catch (error) {
+      console.error('[AUTH] Restore failed', error);
+
+      // 網路暫時異常時保留 Token。
+      showLoggedOut({ clearToken: false });
+      notice('目前無法驗證登入狀態，請稍後重試');
+      return;
+    }
+  }
+
+  // 沒有有效 GAS Session 時，使用 LINE 自動登入。
+  try {
+    const ready = await ensureLiff();
+
+    // LIFF 正在進行 LINE 登入跳轉。
+    if (!ready) {
+      return;
+    }
+
+    const id_token = await lineToken();
+
+    if (!id_token) {
+      return;
+    }
+
+    const result = await api('line_login', {
+      id_token
+    });
+
+    if (result.success && result.token) {
+      const ok = await acceptLogin(result);
+
+      if (ok) {
+        console.log('[AUTH] LINE auto login successful');
+        return;
+      }
+    }
+
+    console.log(
+      '[AUTH] LINE auto login unavailable:',
+      result.error || 'Unknown error'
+    );
+
+    showLoggedOut();
+
+    notice(
+      'LINE 自動登入未完成，請使用會員帳密登入或確認 LINE 綁定狀態'
+    );
+
+  } catch (error) {
+    console.error('[AUTH] Auto login failed', error);
+
+    showLoggedOut({ clearToken: false });
+
+    notice(
+      '自動登入失敗：' +
+      (error.message || String(error))
+    );
+  }
 }
+
+run(initializeAuth);
 
 console.log(
   '[APP] index.js loaded. ' +

@@ -7,8 +7,8 @@
 const $ = id => document.getElementById(id);
 
 const CONFIG = {
-  gasUrl: '',
-  liffId: ''
+  gasUrl: 'https://script.google.com/macros/s/AKfycbydJd-dQlw1v1yPf9UCijKKK3nv_rhR4_WKxyJ3cyjCqHi-fffMNvB0PpzvpHPtZHrFow/exec',
+  liffId: '2012126330-D7gu42yk'
 };
 
 const TOKEN_KEY = 'member_session_token';

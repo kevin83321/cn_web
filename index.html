@@ -1,45 +1,34 @@
 <!doctype html>
-
 <html lang="zh-Hant">
-
 <head>
-
 <meta charset="utf-8">
-
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-
-
 <title>會員登入｜帳密與 LINE</title>
-
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
 <link rel="stylesheet" href="./index.css">
-
 </head>
-
 <body><main class="wrap">
-
 <h1>會員登入</h1><p>帳號密碼與 LINE 使用相同會員資料、Session 與權限。</p>
-
-<details id="settings"><summary>POC 設定（正式版請固定於部署設定）</summary><label for="api">GAS Web App /exec URL</label><input id="api" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"><label for="liffid">LIFF ID</label><input id="liffid" autocomplete="off" placeholder="1234567890-xxxxxxx"><div class="actions"><button id="saveSettings" class="muted" type="button">儲存設定</button></div></details>
-
+<details id="settings">
+  <summary>POC 設定（正式版請固定於部署設定）</summary>
+  <label for="api">GAS Web App /exec URL</label>
+  <input id="api" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec" value="https://script.google.com/macros/s/AKfycbydJd-dQlw1v1yPf9UCijKKK3nv_rhR4_WKxyJ3cyjCqHi-fffMNvB0PpzvpHPtZHrFow/exec">
+  <label for="liffid">LIFF ID</label>
+  <input id="liffid" autocomplete="off" placeholder="1234567890-xxxxxxx" value="2012126330-D7gu42yk">
+  <div class="actions">
+    <button id="saveSettings" class="muted" type="button">儲存設定</button>
+  </div>
+</details>
 <section id="loginPanel"><h2>帳號密碼登入</h2><form id="loginForm"><label for="username">帳號</label><input id="username" autocomplete="username" required><label for="password">密碼</label><input id="password" type="password" autocomplete="current-password" required><div class="actions"><button type="submit">登入</button></div></form><hr><h2>LINE 登入</h2><div class="actions"><button id="lineLogin" class="line" type="button">使用 LINE 登入</button></div><small>第一次使用 LINE 登入，請先用帳密登入，再到會員中心綁定 LINE。</small></section>
-
 <section id="memberPanel" class="hidden"><h2>會員中心 <span class="pill">已登入</span></h2><p id="memberInfo"></p><p id="expiresInfo"></p><div class="actions"><button id="refresh" type="button">驗證 Session／更新會員資料</button><button id="openHierarchy" type="button">查看會員階層</button><button id="openCustomerManagement" type="button">服務客戶管理</button><button id="logout" class="muted" type="button">登出</button></div><hr><h2>LINE 帳號綁定</h2><p id="bindInfo">讀取中…</p><label for="confirmPassword">會員密碼（綁定或解除綁定時需再次確認）</label><input id="confirmPassword" type="password" autocomplete="off"><div class="actions"><button id="bind" class="line" type="button">綁定目前 LINE 帳號</button><button id="unbind" class="danger" type="button">解除 LINE 綁定</button><button id="checkBind" class="muted" type="button">查詢綁定狀態</button></div>
 
-<hr>
-
+  <hr>
 <h2>會員階層 API 測試</h2>
-
 <p><small>查詢範圍由目前登入的 Session 決定，不可指定其他會員。</small></p>
-
 <div class="actions"><button id="memberSelf" type="button">查詢我的會員資料</button><button id="memberDownline" class="muted" type="button">查詢所有下線會員</button></div>
-
 <p id="downlineSummary" role="status"></p>
-
 <pre id="downlineResult">尚未查詢會員階層</pre>
-
 
 <hr>
 <section aria-labelledby="stage9Heading">
@@ -54,13 +43,8 @@
   <pre id="stage9Result">尚未測試 Stage 9B API</pre>
 </section>
 </section>
-
 <p id="notice" role="status" aria-live="polite"></p><h2>API 回應（不顯示 Token）</h2><pre id="result">等待操作</pre>
-
 </main>
-
 <script src="./index.js" defer></script>
-
 </body>
-
 </html>

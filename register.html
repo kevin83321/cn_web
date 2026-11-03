@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f9fc"><title>加入 CN 會員</title>
+<link rel="stylesheet" href="./index.css"><link rel="stylesheet" href="./register.css">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="./register.js" defer></script>
+</head><body><div class="app-shell">
+<header class="app-header"><div class="brand"><span class="brand-icon">CN</span><div><strong>CN 會員中心</strong><small>Member Portal</small></div></div><a class="back-link" href="./index.html">返回</a></header>
+<main class="register-main">
+<div class="register-hero"><div class="register-hero-icon">✦</div><span class="step">WELCOME TO CN</span><h1>歡迎加入 CN</h1><p>你的 LINE 已完成身分驗證，接下來選擇適合的方式開始使用。</p></div>
+<section id="choiceView" class="register-panel">
+<button id="existingButton" class="choice-card" type="button"><span class="choice-icon">↗</span><span><strong>我已經有會員帳號</strong><small>使用原本帳號密碼，綁定 LINE 後直接登入</small></span><b>›</b></button>
+<button id="newButton" class="choice-card" type="button"><span class="choice-icon green">＋</span><span><strong>我是新會員</strong><small>建立會員資料，開始使用 CN 服務</small></span><b>›</b></button>
+</section>
+<section id="bindView" class="register-panel" hidden><button class="back-text" data-back type="button">‹ 返回選擇</button><h2>綁定既有會員</h2><p class="muted-text">為保護帳號，請先使用會員帳號密碼驗證，再綁定目前的 LINE。</p>
+<form id="bindForm" class="register-form"><label>會員帳號<input id="identifier" required autocomplete="username" placeholder="請輸入會員帳號"></label><label>密碼<input id="password" required type="password" autocomplete="current-password" placeholder="請輸入密碼"></label><button class="primary" id="bindSubmit" type="submit">驗證並綁定 LINE</button></form></section>
+<section id="newView" class="register-panel" hidden><button class="back-text" data-back type="button">‹ 返回選擇</button><h2>新會員註冊</h2><p class="muted-text">註冊資料與邀請關係需要由後端驗證。目前尚未開放建立新會員，以避免產生無效帳號。</p><div class="notice">新會員註冊 API 尚待實作。已有帳號的會員，可以先完成 LINE 綁定。</div><button id="switchToBind" class="secondary" type="button">我已有會員帳號</button></section>
+<p id="registerMessage" role="status"></p>
+</main></div></body></html>

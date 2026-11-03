@@ -7,10 +7,8 @@
 
   <title>會員階層管理</title>
 
-  <!-- 共用會員階層樣式 -->
   <link rel="stylesheet" href="./member-hierarchy.css">
 
-  <link rel="stylesheet" href="./member-hierarchy-page.css">
 </head>
 
 <body>
@@ -30,7 +28,7 @@
 
     <p>
       僅顯示目前登入會員的所有下線。
-      資料由 GAS Session 權限決定。
+      資料由 Cloudflare Workers Session 權限決定。
     </p>
 
     <div class="actions">
@@ -111,10 +109,8 @@
 
 </main>
 
-<!-- 階層頁共用程式 -->
 <script src="./member-hierarchy.js"></script>
 
-<script src="./member-hierarchy-page.js" defer></script>
 
 </body>
 </html>

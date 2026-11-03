@@ -1,3 +1,52 @@
+/** CN Member Hierarchy — Cloudflare Workers + D1 */
+'use strict';
+const TOKEN_KEY = 'member_session_token';
+const API_BASE = 'https://cn-web-backend.kevin83321.workers.dev';
+const $ = id => document.getElementById(id);
+let sessionToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
+
+async function api(action, extra = {}) {
+  const routes = {
+    me: '/api/auth/me',
+    member_self: '/api/members/me',
+    member_downline: '/api/members/downline?recursive=true'
+  };
+  const path = routes[action];
+  if (!path) throw new Error('未支援的 API：' + action);
+  const token = extra.token || sessionToken;
+  if (!token) return { success: false, error: 'UNAUTHORIZED' };
+  const response = await fetch(API_BASE + path, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
+    cache: 'no-store'
+  });
+  let data;
+  try { data = await response.json(); }
+  catch { throw new Error('API 回應非 JSON (HTTP ' + response.status + ')'); }
+  if (!response.ok && !data.error) data.error = 'HTTP_' + response.status;
+  return data;
+}
+
+async function verifySession() {
+  if (!sessionToken) {
+    location.replace('./index.html');
+    return false;
+  }
+  const result = await api('me');
+  if (!result.success) {
+    if (['UNAUTHORIZED', 'SESSION_EXPIRED', 'INVALID_SESSION'].includes(result.error)) {
+      sessionToken = '';
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+      location.replace('./index.html');
+    } else {
+      $('hierarchyMessage').textContent = 'Session 驗證失敗：' + (result.error || '未知錯誤');
+    }
+    return false;
+  }
+  return true;
+}
+
 
 /*
  * Stage 8 - Member Hierarchy
@@ -15,7 +64,7 @@
 (() => {
   'use strict';
 
-  const $ = id => document.getElementById(id);
+  // Shared $ helper declared above.
 
   const state = {
     members: [],
@@ -232,7 +281,7 @@
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Downline response:', result);
+      console.log('[HIERARCHY] Downline received:', result.success);
 
       if (!result.success) {
         throw new Error(
@@ -248,7 +297,7 @@
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Self response:', own);
+      console.log('[HIERARCHY] Self received:', own.success);
 
       if (!own.success || !own.member) {
         throw new Error(
@@ -397,3 +446,15 @@
     init();
   }
 })();
+
+
+// Session check before loading protected member data.
+document.addEventListener('DOMContentLoaded', async () => {
+  $('backToMember').addEventListener('click', () => { location.href = './index.html'; });
+  try {
+    if (await verifySession()) await window.Stage8Hierarchy.load();
+  } catch (error) {
+    console.error('[HIERARCHY] Session check failed:', error);
+    $('hierarchyMessage').textContent = '無法驗證登入狀態：' + (error.message || String(error));
+  }
+});

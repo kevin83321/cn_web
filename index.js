@@ -16,6 +16,7 @@ const MANUAL_LOGOUT_KEY = 'member_manual_logout';
 
 let sessionToken = localStorage.getItem(TOKEN_KEY) || '';
 let liffReady = false;
+let liffInitPromise = null;
 let busy = false;
 
 $('api').value = CONFIG.apiBaseUrl;
@@ -259,7 +260,18 @@ const WORKERS_ROUTES = {
     method: 'POST',
     path: '/api/auth/line/unbind',
     auth: true
-  }
+  },
+  member_self: {
+  method: 'GET',
+  path: '/api/members/me',
+  auth: true
+  },
+
+  member_downline: {
+    method: 'GET',
+    path: '/api/members/downline?recursive=true',
+    auth: true
+  },
 };
 
 async function api(action, extra = {}) {
@@ -447,27 +459,30 @@ async function acceptLogin(result) {
 // ============================================================
 
 async function ensureLiff() {
-  if (liffReady) {
-    return true;
-  }
-
   if (!window.liff) {
-    throw Error('LIFF SDK 尚未載入');
+    throw new Error('LIFF SDK 尚未載入');
   }
 
-  const id = $('liffid').value.trim();
+  const liffId = $('liffid').value.trim();
 
-  if (!id) {
-    throw Error('請先設定 LIFF ID');
+  if (!liffId) {
+    throw new Error('LIFF ID 未設定');
   }
 
-  localStorage.setItem('liff_id', id);
+  if (!liffInitPromise) {
+    liffInitPromise = liff.init({ liffId })
+      .then(() => {
+        liffReady = true;
+        return true;
+      })
+      .catch(error => {
+        liffReady = false;
+        liffInitPromise = null;
+        throw error;
+      });
+  }
 
-  await liff.init({
-    liffId: id
-  });
-
-  liffReady = true;
+  await liffInitPromise;
 
   if (!liff.isLoggedIn()) {
     liff.login({

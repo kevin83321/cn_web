@@ -835,52 +835,45 @@ $('memberDownline').onclick = () =>
 // ============================================================
 // 17. Stage 9B API 測試
 // ============================================================
+// ============================================================
+// Stage 9B - Management Navigation
+// ============================================================
 
-const stage9Actions = {
-  testAdminMembers: 'admin_members',
-  testMemberCustomers: 'member_customers',
-  testAdminAuditLogs: 'admin_audit_logs'
+const managementPages = {
+  testMemberCustomers: './customer-management.html'
 };
 
-Object.entries(stage9Actions).forEach(
-  ([buttonId, action]) => {
-    $(buttonId).addEventListener(
-      'click',
-      () => run(async () => {
-        if (!sessionToken) {
-          throw Error('請先登入會員');
-        }
+Object.entries(managementPages).forEach(
+  ([buttonId, url]) => {
+    const button = $(buttonId);
 
-        const payload = {
-          token: sessionToken
-        };
+    if (!button) return;
 
-        if (action === 'admin_audit_logs') {
-          payload.limit = 20;
-        }
+    button.addEventListener('click', () => {
+      if (!sessionToken) {
+        alert('請先登入會員');
+        return;
+      }
 
-        const response = await api(
-          action,
-          payload
-        );
+      location.href = url;
+    });
+  }
+);
 
-        display(response);
+// 尚未實作的管理功能
+const pendingFeatures = {
+  testAdminMembers: '會員管理功能尚未開放',
+  testAdminAuditLogs: '操作紀錄功能尚未開放'
+};
 
-        $('stage9Result').textContent =
-          JSON.stringify(
-            redactSecrets(response),
-            null,
-            2
-          );
+Object.entries(pendingFeatures).forEach(
+  ([buttonId, message]) => {
+    const button = $(buttonId);
 
-        $('stage9Status').textContent =
-          response.success
-            ? action + ' 查詢成功'
-            : action +
-              ' 查詢失敗：' +
-              (response.error || '未知錯誤');
-      })
-    );
+    if (!button) return;
+
+    button.disabled = true;
+    button.title = message;
   }
 );
 

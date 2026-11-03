@@ -7,7 +7,7 @@
 const $ = id => document.getElementById(id);
 
 const CONFIG = {
-  gasUrl: 'https://script.google.com/macros/s/AKfycbydJd-dQlw1v1yPf9UCijKKK3nv_rhR4_WKxyJ3cyjCqHi-fffMNvB0PpzvpHPtZHrFow/exec',
+  gasUrl: 'https://cn-web-backend.kevin83321.workers.dev/',
   liffId: '2012126330-D7gu42yk'
 };
 

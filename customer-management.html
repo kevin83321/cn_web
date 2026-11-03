@@ -1,9 +1,71 @@
 <!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>客戶服務管理</title><link rel="stylesheet" href="./customer-management.css"><script src="./customer-management.js" defer></script></head>
-<body><main class="wrap"><header><h1>客戶服務管理</h1><a href="./index.html">返回會員中心</a></header>
-<p>顯示目前登入直銷商及其下線的有效服務客戶；客戶服務與上下線組織分開管理。</p>
-<div class="actions"><button id="reload" type="button">重新載入</button><input id="search" type="search" placeholder="搜尋客戶姓名、ID、服務直銷商" aria-label="搜尋客戶"></div>
-<p id="message" role="status">準備載入資料…</p><p id="count"></p>
-<div class="table-wrap"><table><thead><tr><th>客戶姓名</th><th>客戶 ID</th><th>會員類型</th><th>服務直銷商 ID</th><th>建立時間</th><th>操作</th></tr></thead><tbody id="rows"></tbody></table></div>
-<section id="historyPanel" hidden><h2>服務關係歷史</h2><p id="historyMessage"></p><div class="table-wrap"><table><thead><tr><th>服務 ID</th><th>服務直銷商</th><th>狀態</th><th>建立時間</th></tr></thead><tbody id="historyRows"></tbody></table></div></section>
-</main></body></html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>客戶服務管理</title>
+  <link rel="stylesheet" href="./customer-management.css">
+  <script src="./customer-management.js" defer></script>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>客戶服務管理</h1>
+    <a href="./index.html">返回會員中心</a>
+  </header>
+  <p>服務客戶與會員上下線分開管理。指派、轉移及結束服務會更新 D1 資料。</p>
+
+  <section class="card" aria-labelledby="manageHeading">
+    <h2 id="manageHeading">服務關係管理</h2>
+    <p id="permissionMessage" role="status">正在確認操作權限…</p>
+    <form id="manageForm">
+      <div class="form-grid">
+        <label>操作
+          <select id="operation" required>
+            <option value="assign">指派服務</option>
+            <option value="transfer">轉移服務</option>
+            <option value="end-service">結束服務</option>
+          </select>
+        </label>
+        <label>客戶會員 ID
+          <input id="customerId" autocomplete="off" required maxlength="100" placeholder="例如 CUSTOMER001">
+        </label>
+        <label id="distributorField">服務直銷商會員 ID
+          <input id="distributorId" autocomplete="off" maxlength="100" placeholder="例如 DIST001">
+        </label>
+      </div>
+      <p class="hint" id="operationHint">指派尚未有有效服務關係的客戶。</p>
+      <button id="submitAction" type="submit" disabled>確認指派</button>
+      <p id="actionMessage" role="status"></p>
+    </form>
+  </section>
+
+  <section aria-labelledby="listHeading">
+    <h2 id="listHeading">目前服務客戶</h2>
+    <div class="actions">
+      <button id="reload" type="button">重新載入</button>
+      <input id="search" type="search" placeholder="搜尋客戶姓名、ID、服務直銷商" aria-label="搜尋客戶">
+    </div>
+    <p id="message" role="status">準備載入資料…</p>
+    <p id="count"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>客戶姓名</th><th>客戶 ID</th><th>會員類型</th><th>服務直銷商 ID</th><th>建立時間</th><th>操作</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="historyPanel" hidden>
+    <h2>服務關係歷史</h2>
+    <p id="historyMessage" role="status"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>服務 ID</th><th>服務直銷商</th><th>狀態</th><th>建立時間</th></tr></thead>
+        <tbody id="historyRows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

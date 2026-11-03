@@ -7,7 +7,7 @@
 const $ = id => document.getElementById(id);
 
 const CONFIG = {
-  gasUrl: 'https://cn-web-backend.kevin83321.workers.dev/',
+  apiBaseUrl: 'https://cn-web-backend.kevin83321.workers.dev',
   liffId: '2012126330-D7gu42yk'
 };
 
@@ -18,8 +18,8 @@ let sessionToken = localStorage.getItem(TOKEN_KEY) || '';
 let liffReady = false;
 let busy = false;
 
-$('api').value = CONFIG.gasUrl || sessionStorage.getItem('gas_url') || '';
-$('liffid').value = CONFIG.liffId || localStorage.getItem('liff_id') || '';
+$('api').value = CONFIG.apiBaseUrl;
+$('liffid').value = CONFIG.liffId;
 
 // ============================================================
 // 2. API 效能監控
@@ -33,12 +33,11 @@ function recordApiPerformance(record) {
 
   if (!API_PERFORMANCE_LOG) return;
 
-  const status = record.success ? 'OK' : 'FAILED';
-
   console.log(
     `[API] ${record.action} | ` +
     `${record.elapsed_ms.toFixed(0)} ms | ` +
-    `HTTP ${record.http_status} | ${status}`
+    `HTTP ${record.http_status} | ` +
+    (record.success ? 'OK' : 'FAILED')
   );
 }
 
@@ -51,28 +50,23 @@ function apiPerfReport() {
   const groups = {};
 
   for (const record of apiPerformanceRecords) {
-    const action = record.action;
-
-    if (!groups[action]) {
-      groups[action] = [];
+    if (!groups[record.action]) {
+      groups[record.action] = [];
     }
 
-    groups[action].push(record);
+    groups[record.action].push(record);
   }
 
   const report = Object.entries(groups).map(
     ([action, records]) => {
       const times = records.map(r => r.elapsed_ms);
 
-      const total = times.reduce(
-        (sum, value) => sum + value,
-        0
-      );
-
       return {
         action,
         count: records.length,
-        avg_ms: Math.round(total / records.length),
+        avg_ms: Math.round(
+          times.reduce((a, b) => a + b, 0) / times.length
+        ),
         min_ms: Math.round(Math.min(...times)),
         max_ms: Math.round(Math.max(...times)),
         failed: records.filter(r => !r.success).length
@@ -105,8 +99,8 @@ window.apiPerfClear = apiPerfClear;
 // 3. 共用 UI 函式
 // ============================================================
 
-function notice(s) {
-  $('notice').textContent = s || '';
+function notice(message) {
+  $('notice').textContent = message || '';
 }
 
 function redactSecrets(value) {
@@ -118,7 +112,8 @@ function redactSecrets(value) {
     return Object.fromEntries(
       Object.entries(value).map(([key, val]) => [
         key,
-        /^(token|id_token|password|password_hash|salt|token_hash)$/i.test(key)
+        /^(token|id_token|password|password_hash|salt|token_hash)$/i
+          .test(key)
           ? '[REDACTED]'
           : redactSecrets(val)
       ])
@@ -136,14 +131,12 @@ function display(data) {
   );
 }
 
-function setBusy(v) {
-  busy = v;
+function setBusy(value) {
+  busy = value;
 
-  document.querySelectorAll('button').forEach(
-    button => {
-      button.disabled = v;
-    }
-  );
+  document.querySelectorAll('button').forEach(button => {
+    button.disabled = value;
+  });
 }
 
 async function run(fn) {
@@ -154,8 +147,8 @@ async function run(fn) {
 
   try {
     await fn();
-  } catch (e) {
-    const message = e.message || String(e);
+  } catch (error) {
+    const message = error.message || String(error);
 
     notice(message);
 
@@ -164,30 +157,53 @@ async function run(fn) {
       error: message
     });
 
-    console.error('[APP ERROR]', e);
+    console.error('[APP ERROR]', error);
   } finally {
     setBusy(false);
   }
 }
 
 // ============================================================
-// 4. GAS 設定
+// 4. Workers API 設定
 // ============================================================
 
-function gasUrl() {
-  const url = $('api').value.trim();
+function apiUrl() {
+  const value = $('api').value.trim().replace(/\/+$/, '');
 
-  if (
-    !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\?.*)?$/.test(url)
-  ) {
-    throw Error('請填寫正確的 GAS /exec URL');
+  let parsed;
+
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw Error('請填寫正確的 Workers API URL');
   }
 
-  return url;
+  if (
+    parsed.protocol !== 'https:' &&
+    !['localhost', '127.0.0.1'].includes(parsed.hostname)
+  ) {
+    throw Error('Workers API 必須使用 HTTPS');
+  }
+
+  if (
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    throw Error('API URL 不應包含帳密或查詢參數');
+  }
+
+  return (
+    parsed.origin +
+    (parsed.pathname === '/'
+      ? ''
+      : parsed.pathname.replace(/\/+$/, ''))
+  );
 }
 
 function saveSettings() {
-  sessionStorage.setItem('gas_url', gasUrl());
+  sessionStorage.setItem('api_url', apiUrl());
 
   const id = $('liffid').value.trim();
 
@@ -199,8 +215,52 @@ function saveSettings() {
 }
 
 // ============================================================
-// 5. 共用 API — POST + 效能量測
+// 5. Workers REST API
 // ============================================================
+
+const WORKERS_ROUTES = {
+  login: {
+    method: 'POST',
+    path: '/api/auth/login',
+    auth: false
+  },
+
+  me: {
+    method: 'GET',
+    path: '/api/auth/me',
+    auth: true
+  },
+
+  logout: {
+    method: 'POST',
+    path: '/api/auth/logout',
+    auth: true
+  },
+
+  line_login: {
+    method: 'POST',
+    path: '/api/auth/line',
+    auth: false
+  },
+
+  line_status: {
+    method: 'GET',
+    path: '/api/auth/line/status',
+    auth: true
+  },
+
+  line_bind: {
+    method: 'POST',
+    path: '/api/auth/line/bind',
+    auth: true
+  },
+
+  line_unbind: {
+    method: 'POST',
+    path: '/api/auth/line/unbind',
+    auth: true
+  }
+};
 
 async function api(action, extra = {}) {
   const start = performance.now();
@@ -209,37 +269,57 @@ async function api(action, extra = {}) {
   let success = false;
 
   try {
-    const response = await fetch(gasUrl(), {
-      method: 'POST',
-      redirect: 'follow',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({
-        action,
-        ...extra
-      })
-    });
+    const route = WORKERS_ROUTES[action];
+
+    if (!route) {
+      return {
+        success: false,
+        error: 'NOT_IMPLEMENTED',
+        message: `Workers 尚未實作 ${action}`
+      };
+    }
+
+    const authToken = extra.token || sessionToken;
+
+    if (route.auth && !authToken) {
+      return {
+        success: false,
+        error: 'UNAUTHORIZED'
+      };
+    }
+
+    const headers = {
+      Accept: 'application/json'
+    };
+
+    if (route.auth) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+
+    const options = {
+      method: route.method,
+      headers,
+      cache: 'no-store'
+    };
+
+    if (route.method === 'POST') {
+      headers['Content-Type'] = 'application/json';
+
+      const { token: ignored, ...body } = extra;
+
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(
+      apiUrl() + route.path,
+      options
+    );
 
     httpStatus = response.status;
 
-    if (!response.ok) {
-      throw Error('API HTTP ' + response.status);
-    }
-
     const result = await response.json();
 
-    if (
-      result &&
-      result.method === 'GET' &&
-      result.message === 'GAS Member API'
-    ) {
-      throw Error(
-        'GAS 回傳預設 GET 訊息，請檢查前端請求、部署版本及 API URL'
-      );
-    }
-
-    success = result && result.success === true;
+    success = response.ok && result?.success === true;
 
     return result;
 
@@ -252,11 +332,9 @@ async function api(action, extra = {}) {
     throw error;
 
   } finally {
-    const elapsed = performance.now() - start;
-
     recordApiPerformance({
       action,
-      elapsed_ms: elapsed,
+      elapsed_ms: performance.now() - start,
       http_status: httpStatus,
       success,
       timestamp: new Date().toISOString()
@@ -286,6 +364,7 @@ function showLoggedIn(member, expires) {
 function showLoggedOut({ clearToken = true } = {}) {
   if (clearToken) {
     sessionToken = '';
+
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
   }
@@ -318,6 +397,7 @@ async function restore({ showError = true } = {}) {
       result.error === 'INVALID_SESSION'
     ) {
       sessionToken = '';
+
       localStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(TOKEN_KEY);
     }
@@ -354,12 +434,10 @@ async function acceptLogin(result) {
 
   localStorage.setItem(TOKEN_KEY, sessionToken);
   sessionStorage.removeItem(TOKEN_KEY);
+
   localStorage.removeItem(MANUAL_LOGOUT_KEY);
 
-  sessionStorage.setItem(
-    'gas_url',
-    gasUrl()
-  );
+  sessionStorage.setItem('api_url', apiUrl());
 
   return await restore();
 }
@@ -369,7 +447,9 @@ async function acceptLogin(result) {
 // ============================================================
 
 async function ensureLiff() {
-  if (liffReady) return true;
+  if (liffReady) {
+    return true;
+  }
 
   if (!window.liff) {
     throw Error('LIFF SDK 尚未載入');
@@ -405,19 +485,18 @@ async function ensureLiff() {
 
 function tokenExpired(jwt) {
   try {
-    const p = jwt
+    const payload = jwt
       .split('.')[1]
       .replace(/-/g, '+')
       .replace(/_/g, '/');
 
-    const payload = JSON.parse(atob(p));
+    const decoded = JSON.parse(atob(payload));
 
     return (
-      !payload.exp ||
-      Date.now() >= Number(payload.exp) * 1000 - 60000
+      !decoded.exp ||
+      Date.now() >= Number(decoded.exp) * 1000 - 60000
     );
-
-  } catch (_) {
+  } catch {
     return true;
   }
 }
@@ -485,14 +564,14 @@ async function checkBinding(render = true) {
 }
 
 // ============================================================
-// 9. 設定、登入與 LINE 操作
+// 9. 設定與登入
 // ============================================================
 
 $('saveSettings').onclick = () =>
   run(async () => saveSettings());
 
-$('loginForm').onsubmit = e => {
-  e.preventDefault();
+$('loginForm').onsubmit = event => {
+  event.preventDefault();
 
   run(async () => {
     const result = await api('login', {
@@ -504,11 +583,17 @@ $('loginForm').onsubmit = e => {
   });
 };
 
+// ============================================================
+// 10. LINE 登入
+// ============================================================
+
 $('lineLogin').onclick = () =>
   run(async () => {
     const id_token = await lineToken();
 
-    if (!id_token) return;
+    if (!id_token) {
+      return;
+    }
 
     const result = await api('line_login', {
       id_token
@@ -517,8 +602,16 @@ $('lineLogin').onclick = () =>
     await acceptLogin(result);
   });
 
+// ============================================================
+// 11. Session 更新
+// ============================================================
+
 $('refresh').onclick = () =>
   run(restore);
+
+// ============================================================
+// 12. 頁面切換
+// ============================================================
 
 $('openHierarchy').onclick = () => {
   if (!sessionToken) {
@@ -526,14 +619,9 @@ $('openHierarchy').onclick = () => {
     return;
   }
 
-  sessionStorage.setItem(
-    'gas_url',
-    gasUrl()
-  );
+  sessionStorage.setItem('api_url', apiUrl());
 
-  window.location.assign(
-    './member-hierarchy.html'
-  );
+  window.location.assign('./member-hierarchy.html');
 };
 
 $('openCustomerManagement').onclick = () => {
@@ -542,15 +630,14 @@ $('openCustomerManagement').onclick = () => {
     return;
   }
 
-  sessionStorage.setItem(
-    'gas_url',
-    gasUrl()
-  );
+  sessionStorage.setItem('api_url', apiUrl());
 
-  window.location.assign(
-    './customer-management.html'
-  );
+  window.location.assign('./customer-management.html');
 };
+
+// ============================================================
+// 13. LINE 綁定
+// ============================================================
 
 $('checkBind').onclick = () =>
   run(() => checkBinding(true));
@@ -569,7 +656,9 @@ $('bind').onclick = () =>
 
     const id_token = await lineToken();
 
-    if (!id_token) return;
+    if (!id_token) {
+      return;
+    }
 
     const result = await api('line_bind', {
       token: sessionToken,
@@ -592,6 +681,10 @@ $('bind').onclick = () =>
     }
   });
 
+// ============================================================
+// 14. LINE 解除綁定
+// ============================================================
+
 $('unbind').onclick = () =>
   run(async () => {
     if (!sessionToken) {
@@ -604,11 +697,9 @@ $('unbind').onclick = () =>
       throw Error('請輸入會員密碼');
     }
 
-    if (
-      !confirm(
-        '確定解除 LINE 綁定？解除後將無法使用 LINE 登入，直到重新綁定。'
-      )
-    ) {
+    if (!confirm(
+      '確定解除 LINE 綁定？解除後將無法使用 LINE 登入，直到重新綁定。'
+    )) {
       return;
     }
 
@@ -631,6 +722,10 @@ $('unbind').onclick = () =>
       );
     }
   });
+
+// ============================================================
+// 15. 登出
+// ============================================================
 
 $('logout').onclick = () =>
   run(async () => {
@@ -663,7 +758,7 @@ $('logout').onclick = () =>
   });
 
 // ============================================================
-// 10. 會員資料
+// 16. 會員資料
 // ============================================================
 
 $('memberSelf').onclick = () =>
@@ -685,7 +780,7 @@ $('memberSelf').onclick = () =>
           (result.error || '未知錯誤');
 
     $('downlineResult').textContent =
-      JSON.stringify(result, null, 2);
+      JSON.stringify(redactSecrets(result), null, 2);
   });
 
 $('memberDownline').onclick = () =>
@@ -719,11 +814,11 @@ $('memberDownline').onclick = () =>
           : '查詢成功（請檢查回應欄位結構）';
 
     $('downlineResult').textContent =
-      JSON.stringify(result, null, 2);
+      JSON.stringify(redactSecrets(result), null, 2);
   });
 
 // ============================================================
-// 11. Stage 9B API 測試
+// 17. Stage 9B API 測試
 // ============================================================
 
 const stage9Actions = {
@@ -775,7 +870,7 @@ Object.entries(stage9Actions).forEach(
 );
 
 // ============================================================
-// 12. LIFF 自動登入初始化
+// 18. LIFF 自動登入初始化
 // ============================================================
 
 async function initializeAuth() {
@@ -784,11 +879,12 @@ async function initializeAuth() {
   // 使用者主動登出後，不自動登入。
   if (localStorage.getItem(MANUAL_LOGOUT_KEY) === '1') {
     console.log('[AUTH] Manual logout detected');
+
     showLoggedOut();
     return;
   }
 
-  // 優先恢復既有 GAS Session。
+  // 優先恢復既有 Workers Session。
   if (sessionToken) {
     try {
       const restored = await restore({
@@ -796,24 +892,27 @@ async function initializeAuth() {
       });
 
       if (restored) {
-        console.log('[AUTH] Existing GAS session restored');
+        console.log('[AUTH] Existing Workers session restored');
         return;
       }
+
     } catch (error) {
       console.error('[AUTH] Restore failed', error);
 
       // 網路暫時異常時保留 Token。
-      showLoggedOut({ clearToken: false });
+      showLoggedOut({
+        clearToken: false
+      });
+
       notice('目前無法驗證登入狀態，請稍後重試');
       return;
     }
   }
 
-  // 沒有有效 GAS Session 時，使用 LINE 自動登入。
+  // 沒有有效 Session 時，使用 LINE 自動登入。
   try {
     const ready = await ensureLiff();
 
-    // LIFF 正在進行 LINE 登入跳轉。
     if (!ready) {
       return;
     }
@@ -845,13 +944,18 @@ async function initializeAuth() {
     showLoggedOut();
 
     notice(
-      'LINE 自動登入未完成，請使用會員帳密登入或確認 LINE 綁定狀態'
+      result.error === 'LINE_NOT_BOUND'
+        ? 'LINE 尚未綁定會員，請先使用帳號密碼登入並完成綁定'
+        : 'LINE 自動登入未完成：' +
+          (result.error || '未知錯誤')
     );
 
   } catch (error) {
     console.error('[AUTH] Auto login failed', error);
 
-    showLoggedOut({ clearToken: false });
+    showLoggedOut({
+      clearToken: false
+    });
 
     notice(
       '自動登入失敗：' +
@@ -859,6 +963,10 @@ async function initializeAuth() {
     );
   }
 }
+
+// ============================================================
+// 19. 初始化
+// ============================================================
 
 run(initializeAuth);
 

@@ -1,184 +1,1476 @@
 'use strict';
+
 (() => {
-  const API_BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-  const LIFF_ID = '2012126330-D7gu42yk'; // Confirm against LINE Developers
-  const TOKEN_KEY = 'member_session_token';
-  const MANUAL_LOGOUT_KEY = 'member_manual_logout';
+
+  // ============================================================
+  // 1. Configuration
+  // ============================================================
+
+  const CONFIG = {
+    API_BASE: 'https://cn-web-backend.kevin83321.workers.dev',
+
+    LIFF_ID: '2012126330-D7gu42yk',
+
+    TOKEN_KEY: 'member_session_token',
+
+    MANUAL_LOGOUT_KEY: 'member_manual_logout',
+
+    REGISTRATION_REASON_KEY: 'cn_registration_reason',
+
+    LINE_REDIRECT_KEY: 'cn_line_redirect_attempt',
+
+    LINE_REDIRECT_COOLDOWN: 15000,
+
+    LINE_TOKEN_EXPIRY_BUFFER: 60
+  };
+
+
+  // ============================================================
+  // 2. Helpers
+  // ============================================================
+
   const $ = id => document.getElementById(id);
-  const views = ['loadingView','errorView','guestView','passwordView','dashboardView','accountView'];
-  const state = { token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '', member: null, permissions: [], liffPromise: null, working: false };
-  const features = [
-    { id:'hierarchy', title:'會員階層', detail:'查看我的組織', icon:'♧', url:'./member-hierarchy.html', permission:'member.downline.read' },
-    { id:'customers', title:'服務客戶', detail:'管理客戶關係', icon:'♧', url:'./customer-management.html', permission:'customer.read' },
-    { id:'profile', title:'個人資料', detail:'查看會員資訊', icon:'◉', tab:'account', permission:'member.self.read' },
-    { id:'account', title:'帳號設定', detail:'登入與安全', icon:'⚙', tab:'account', permission:null }
-  ];
-  const adminFeatures = [
-    { title:'全部會員',detail:'管理會員資料',icon:'▦',permission:'admin.members.read',url:'./admin-members.html' },
-    { title:'操作紀錄',detail:'查詢稽核紀錄',icon:'≡',permission:'admin.audit.read',url:'./admin-audit-logs.html' }
+
+  const views = [
+    'loadingView',
+    'errorView',
+    'guestView',
+    'passwordView',
+    'dashboardView',
+    'accountView'
   ];
 
+  const state = {
+    token:
+      localStorage.getItem(CONFIG.TOKEN_KEY) ||
+      sessionStorage.getItem(CONFIG.TOKEN_KEY) ||
+      '',
+
+    member: null,
+
+    permissions: [],
+
+    liffPromise: null,
+
+    working: false,
+
+    lastError: null
+  };
+
+
+  // ============================================================
+  // 3. Feature Definitions
+  // ============================================================
+
+  const features = [
+
+    {
+      id: 'hierarchy',
+      title: '會員階層',
+      detail: '查看我的組織',
+      icon: '♧',
+      url: './member-hierarchy.html',
+      permission: 'member.downline.read'
+    },
+
+    {
+      id: 'customers',
+      title: '服務客戶',
+      detail: '管理客戶關係',
+      icon: '♧',
+      url: './customer-management.html',
+      permission: 'customer.read'
+    },
+
+    {
+      id: 'profile',
+      title: '個人資料',
+      detail: '查看會員資訊',
+      icon: '◉',
+      tab: 'account',
+      permission: 'member.self.read'
+    },
+
+    {
+      id: 'account',
+      title: '帳號設定',
+      detail: '登入與安全',
+      icon: '⚙',
+      tab: 'account',
+      permission: null
+    }
+
+  ];
+
+
+  const adminFeatures = [
+
+    {
+      id: 'adminMembers',
+      title: '全部會員',
+      detail: '管理會員資料',
+      icon: '▦',
+      permission: 'admin.members.read',
+      url: './admin-members.html'
+    },
+
+    {
+      id: 'adminAudit',
+      title: '操作紀錄',
+      detail: '查詢稽核紀錄',
+      icon: '≡',
+      permission: 'admin.audit.read',
+      url: './admin-audit-logs.html'
+    }
+
+  ];
+
+
+  // ============================================================
+  // 4. UI State
+  // ============================================================
+
   function show(view) {
-    for (const id of views) $(id).hidden = id !== view;
-    $('bottomNav').hidden = !['dashboardView','accountView'].includes(view);
+
+    for (const id of views) {
+
+      const element = $(id);
+
+      if (element) {
+        element.hidden = id !== view;
+      }
+
+    }
+
+    const isAuthenticatedView = [
+      'dashboardView',
+      'accountView'
+    ].includes(view);
+
+    $('bottomNav').hidden = !isAuthenticatedView;
+
     $('profileButton').disabled = !state.member;
-    document.querySelectorAll('[data-tab]').forEach(el => el.classList.toggle('active',el.dataset.tab === (view === 'accountView' ? 'account' : 'home')));
+
+    document
+      .querySelectorAll('[data-tab]')
+      .forEach(element => {
+
+        const currentTab =
+          view === 'accountView'
+            ? 'account'
+            : 'home';
+
+        element.classList.toggle(
+          'active',
+          element.dataset.tab === currentTab
+        );
+
+      });
+
   }
-  function busy(text='正在確認登入狀態…') { $('loadingText').textContent=text;show('loadingView'); }
-  function fail(message) { $('errorText').textContent=message;show('errorView'); }
+
+
+  function busy(
+    message = '正在確認登入狀態…'
+  ) {
+
+    $('loadingText').textContent = message;
+
+    show('loadingView');
+
+  }
+
+
+  function fail(message, error = null) {
+
+    state.lastError = error;
+
+    $('errorText').textContent = message;
+
+    show('errorView');
+
+  }
+
+
+  function errorMessage(error) {
+
+    const messages = {
+
+      INVALID_LINE_TOKEN:
+        'LINE 身分驗證失敗，請重新登入 LINE',
+
+      LINE_RELOGIN_REQUIRED:
+        'LINE 登入資訊已失效，請重新登入 LINE',
+
+      LINE_ID_TOKEN_MISSING:
+        '無法取得 LINE 登入資訊',
+
+      LINE_TOKEN_EXPIRED:
+        'LINE 登入資訊已過期',
+
+      LINE_NOT_BOUND:
+        'LINE 尚未綁定會員帳號',
+
+      SESSION_EXPIRED:
+        '登入已過期，請重新登入',
+
+      UNAUTHORIZED:
+        '登入驗證失敗',
+
+      Failed_to_fetch:
+        '網路連線異常，請檢查網路後重試'
+
+    };
+
+    if (error?.message === 'Failed to fetch') {
+      return messages.Failed_to_fetch;
+    }
+
+    return (
+      messages[error?.message] ||
+      error?.message ||
+      '發生未知錯誤'
+    );
+
+  }
+
+
+  // ============================================================
+  // 5. Session Management
+  // ============================================================
+
+  function saveSession(token) {
+
+    if (!token) {
+      throw new Error('SESSION_TOKEN_MISSING');
+    }
+
+    state.token = token;
+
+    localStorage.setItem(
+      CONFIG.TOKEN_KEY,
+      token
+    );
+
+    sessionStorage.removeItem(
+      CONFIG.TOKEN_KEY
+    );
+
+    localStorage.removeItem(
+      CONFIG.MANUAL_LOGOUT_KEY
+    );
+
+  }
+
+
   function clearSession() {
-    state.token='';state.member=null;state.permissions=[];
-    localStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(TOKEN_KEY);
+
+    state.token = '';
+
+    state.member = null;
+
+    state.permissions = [];
+
+    localStorage.removeItem(
+      CONFIG.TOKEN_KEY
+    );
+
+    sessionStorage.removeItem(
+      CONFIG.TOKEN_KEY
+    );
+
   }
-  async function api(path,{method='GET',body,auth=true}={}) {
-    const response=await fetch(API_BASE+path,{method,cache:'no-store',headers:{
-      ...(auth&&state.token?{Authorization:'Bearer '+state.token}:{}),
-      ...(body?{'Content-Type':'application/json'}:{})
-    },...(body?{body:JSON.stringify(body)}:{})});
-    let data;try{data=await response.json();}catch{throw new Error('HTTP_'+response.status);}
-    if(!response.ok||!data.success){const err=new Error(data.error||'HTTP_'+response.status);err.status=response.status;throw err;}
+
+
+  function isManualLogout() {
+
+    return (
+      localStorage.getItem(
+        CONFIG.MANUAL_LOGOUT_KEY
+      ) === '1'
+    );
+
+  }
+
+
+  // ============================================================
+  // 6. Workers API
+  // ============================================================
+
+  async function api(
+    path,
+    {
+      method = 'GET',
+      body,
+      auth = true
+    } = {}
+  ) {
+
+    const headers = {};
+
+    if (auth && state.token) {
+
+      headers.Authorization =
+        'Bearer ' + state.token;
+
+    }
+
+    if (body !== undefined) {
+
+      headers['Content-Type'] =
+        'application/json';
+
+    }
+
+    const response = await fetch(
+      CONFIG.API_BASE + path,
+      {
+        method,
+
+        cache: 'no-store',
+
+        headers,
+
+        ...(body !== undefined
+          ? {
+              body: JSON.stringify(body)
+            }
+          : {})
+      }
+    );
+
+    let data;
+
+    try {
+
+      data = await response.json();
+
+    } catch {
+
+      throw new Error(
+        'HTTP_' + response.status
+      );
+
+    }
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+
+      const error = new Error(
+        data.error ||
+        'HTTP_' + response.status
+      );
+
+      error.status = response.status;
+
+      error.data = data;
+
+      throw error;
+
+    }
+
     return data;
+
   }
+
+
+  // ============================================================
+  // 7. LIFF Initialization
+  // ============================================================
+
   async function initLiff() {
-    if(!window.liff) throw new Error('LINE SDK 載入失敗');
-    if(!state.liffPromise) state.liffPromise=liff.init({liffId:LIFF_ID}).catch(e=>{state.liffPromise=null;throw e;});
-    await state.liffPromise;
+
+    if (!window.liff) {
+
+      throw new Error(
+        'LINE SDK 載入失敗'
+      );
+
+    }
+
+    if (!state.liffPromise) {
+
+      state.liffPromise = liff.init({
+        liffId: CONFIG.LIFF_ID
+      })
+        .then(() => {
+
+          console.log(
+            '[LINE] LIFF initialized'
+          );
+
+          return true;
+
+        })
+        .catch(error => {
+
+          state.liffPromise = null;
+
+          throw error;
+
+        });
+
+    }
+
+    return state.liffPromise;
+
   }
-  function redirectLine() {
-    const redirectUri=location.origin+location.pathname+location.search;
-    liff.login({redirectUri});
+
+
+  // ============================================================
+  // 8. LINE ID Token Validation
+  // ============================================================
+
+  function getLineTokenInfo() {
+
+    if (!window.liff) {
+      return null;
+    }
+
+    if (!liff.isLoggedIn()) {
+      return null;
+    }
+
+    const decoded =
+      liff.getDecodedIDToken();
+
+    if (!decoded) {
+      return null;
+    }
+
+    const now =
+      Math.floor(Date.now() / 1000);
+
+    const expiresAt =
+      Number(decoded.exp || 0);
+
+    return {
+
+      issuer: decoded.iss,
+
+      audience: String(
+        decoded.aud || ''
+      ),
+
+      expiresAt,
+
+      remainingSeconds:
+        expiresAt - now,
+
+      expired:
+        expiresAt <=
+        now +
+        CONFIG.LINE_TOKEN_EXPIRY_BUFFER
+
+    };
+
   }
-  async function tryLine({interactive=false}={}) {
+
+
+  function isLineTokenValid() {
+
+    const info = getLineTokenInfo();
+
+    if (!info) {
+      return false;
+    }
+
+    if (info.issuer !==
+        'https://access.line.me') {
+
+      return false;
+
+    }
+
+    // LIFF ID 前半段是 LINE Login Channel ID
+    const expectedChannelId =
+      CONFIG.LIFF_ID.split('-')[0];
+
+    if (
+      info.audience !==
+      expectedChannelId
+    ) {
+
+      console.warn(
+        '[LINE] Channel mismatch'
+      );
+
+      return false;
+
+    }
+
+    return !info.expired;
+
+  }
+
+
+  // ============================================================
+  // 9. LINE Redirect Protection
+  // ============================================================
+
+  function canRedirectLine() {
+
+    const lastAttempt = Number(
+      sessionStorage.getItem(
+        CONFIG.LINE_REDIRECT_KEY
+      ) || 0
+    );
+
+    const now = Date.now();
+
+    return (
+      now - lastAttempt >=
+      CONFIG.LINE_REDIRECT_COOLDOWN
+    );
+
+  }
+
+
+  function markLineRedirect() {
+
+    sessionStorage.setItem(
+      CONFIG.LINE_REDIRECT_KEY,
+      String(Date.now())
+    );
+
+  }
+
+
+  function clearLineRedirect() {
+
+    sessionStorage.removeItem(
+      CONFIG.LINE_REDIRECT_KEY
+    );
+
+  }
+
+
+  function redirectLine({
+    force = false
+  } = {}) {
+
+    if (
+      !force &&
+      !canRedirectLine()
+    ) {
+
+      throw new Error(
+        'LINE_RELOGIN_REQUIRED'
+      );
+
+    }
+
+    markLineRedirect();
+
+    const redirectUri =
+      location.origin +
+      location.pathname +
+      location.search;
+
+    console.log(
+      '[LINE] Redirecting to LINE Login'
+    );
+
+    liff.login({
+      redirectUri
+    });
+
+  }
+
+
+  // ============================================================
+  // 10. LINE Logout / Reauthentication
+  // ============================================================
+
+  async function reauthenticateLine({
+    force = false
+  } = {}) {
+
     await initLiff();
-    if(!liff.isLoggedIn()) {
-      if(interactive){redirectLine();return 'redirecting';}
-      return 'guest';
+
+    if (
+      !force &&
+      !canRedirectLine()
+    ) {
+
+      throw new Error(
+        'LINE_RELOGIN_REQUIRED'
+      );
+
     }
-    const id_token=liff.getIDToken();
-    if(!id_token) throw new Error('LINE_ID_TOKEN_MISSING');
-    try {
-      const data=await api('/api/auth/line',{method:'POST',body:{id_token},auth:false});
-      state.token=data.token;
-      localStorage.setItem(TOKEN_KEY,state.token);
-      localStorage.removeItem(MANUAL_LOGOUT_KEY);
-      return 'success';
-    } catch(e) {
-      if(e.message==='LINE_NOT_BOUND') {
-        // Keep LINE session; the registration page may use its ID token.
-        sessionStorage.setItem('cn_registration_reason','LINE_NOT_BOUND');
-        location.replace('./register.html');
+
+    if (liff.isLoggedIn()) {
+
+      liff.logout();
+
+    }
+
+    redirectLine({ force });
+
+    return 'redirecting';
+
+  }
+
+
+  // ============================================================
+  // 11. LINE Login
+  // ============================================================
+
+  async function tryLine({
+    interactive = false
+  } = {}) {
+
+    await initLiff();
+
+    // ----------------------------------------------------------
+    // LINE 尚未登入
+    // ----------------------------------------------------------
+
+    if (!liff.isLoggedIn()) {
+
+      if (interactive) {
+
+        redirectLine({
+          force: true
+        });
+
         return 'redirecting';
+
       }
-      throw e;
+
+      return 'guest';
+
     }
-  }
-  function can(permission) {
-    // Permissions must be returned by a trusted backend endpoint.
-    return permission === null || state.permissions.includes(permission);
-  }
-  function makeCard(item) {
-    const btn=document.createElement('button');
-    btn.className='feature-card';btn.type='button';
-    const icon=document.createElement('span');icon.className='feature-icon';icon.textContent=item.icon;
-    const title=document.createElement('strong');title.textContent=item.title;
-    const detail=document.createElement('small');detail.textContent=item.detail;
-    btn.append(icon,title,detail);
-    btn.addEventListener('click',()=>{if(item.tab){show(item.tab==='account'?'accountView':'dashboardView');return;}if(item.url)location.href=item.url;});
-    return btn;
-  }
-  async function loadPermissions() {
-    // Backend permission endpoint not implemented yet. Do not grant write/admin
-    // permissions from client-side role inference.
-    try {
-      const data=await api('/api/auth/permissions');
-      state.permissions=Array.isArray(data.permissions)?data.permissions:[];
-    } catch(e) {
-      if(e.status!==404&&e.message!=='NOT_IMPLEMENTED') console.warn('權限查詢失敗',e.message);
-      // Temporary compatibility: only show existing read-only navigation.
-      state.permissions=['member.self.read'];
-      if(state.member?.role==='distributor' && state.member?.status==='active')
-        state.permissions.push('member.downline.read','customer.read');
-    }
-  }
-  function renderDashboard() {
-    const m=state.member||{};
-    $('memberName').textContent=m.name||m.member_id||'會員';
-    $('memberId').textContent=m.member_id||'—';
-    $('memberRole').textContent=({distributor:'直銷商',lifestyle:'生活會員',non_member:'一般會員'})[m.role]||m.role||'會員';
-    $('accountName').textContent=m.name||'會員';
-    $('accountId').textContent=m.member_id||'—';
-    const hour=new Date().getHours();
-    $('greetingText').textContent=hour<11?'早安，歡迎回來':hour<18?'午安，歡迎回來':'晚安，歡迎回來';
-    $('featureGrid').replaceChildren(...features.filter(x=>can(x.permission)).map(makeCard));
-    const admin=adminFeatures.filter(x=>can(x.permission));
-    $('adminSection').hidden=admin.length===0;
-    $('adminGrid').replaceChildren(...admin.map(makeCard));
-    show('dashboardView');
-  }
-  async function enterDashboard() {
-    const result=await api('/api/auth/me');
-    state.member=result.member;
-    if(!state.member)throw new Error('MEMBER_NOT_FOUND');
-    await loadPermissions();
-    renderDashboard();
-  }
-  async function initialize() {
-    if(state.working)return;
-    state.working=true;busy();
-    try {
-      if(state.token) {
-        try {await enterDashboard();return;}
-        catch(e) {
-          if(e.status!==401 && e.status!==403) throw e;
-          clearSession();
+
+    // ----------------------------------------------------------
+    // LINE Token 檢查
+    // ----------------------------------------------------------
+
+    const tokenInfo =
+      getLineTokenInfo();
+
+    if (!isLineTokenValid()) {
+
+      console.warn(
+        '[LINE] Invalid or expired ID Token',
+        {
+          expiresAt:
+            tokenInfo?.expiresAt,
+
+          remainingSeconds:
+            tokenInfo?.remainingSeconds
         }
-      }
-      if(localStorage.getItem(MANUAL_LOGOUT_KEY)==='1') {show('guestView');return;}
-      busy('正在使用 LINE 確認身分…');
-      const result=await tryLine();
-      if(result==='success') await enterDashboard();
-      else if(result==='guest') show('guestView');
-    } catch(e) {
-      console.error('[AUTH]',e);
-      fail(e.message==='Failed to fetch'?'網路連線異常，請檢查網路後重試':e.message);
-    } finally {state.working=false;}
-  }
-  async function loginPassword(e) {
-    e.preventDefault();if(state.working)return;
-    state.working=true;busy('正在登入…');
+      );
+
+      return reauthenticateLine();
+
+    }
+
+    // ----------------------------------------------------------
+    // 取得 LINE ID Token
+    // ----------------------------------------------------------
+
+    const id_token =
+      liff.getIDToken();
+
+    if (!id_token) {
+
+      throw new Error(
+        'LINE_ID_TOKEN_MISSING'
+      );
+
+    }
+
+    // ----------------------------------------------------------
+    // Workers LINE Login
+    // ----------------------------------------------------------
+
     try {
-      const data=await api('/api/auth/login',{method:'POST',body:{identifier:$('identifier').value.trim(),password:$('password').value},auth:false});
-      state.token=data.token;
-      localStorage.setItem(TOKEN_KEY,state.token);
-      localStorage.removeItem(MANUAL_LOGOUT_KEY);
-      $('password').value='';
+
+      const data = await api(
+        '/api/auth/line',
+        {
+          method: 'POST',
+
+          body: {
+            id_token
+          },
+
+          auth: false
+        }
+      );
+
+      if (!data.token) {
+
+        throw new Error(
+          'SESSION_TOKEN_MISSING'
+        );
+
+      }
+
+      saveSession(data.token);
+
+      clearLineRedirect();
+
+      console.log(
+        '[LINE] Login successful'
+      );
+
+      return 'success';
+
+    } catch (error) {
+
+      // --------------------------------------------------------
+      // LINE 尚未綁定
+      // --------------------------------------------------------
+
+      if (
+        error.message ===
+        'LINE_NOT_BOUND'
+      ) {
+
+        sessionStorage.setItem(
+          CONFIG.REGISTRATION_REASON_KEY,
+          'LINE_NOT_BOUND'
+        );
+
+        clearLineRedirect();
+
+        location.replace(
+          './register.html'
+        );
+
+        return 'redirecting';
+
+      }
+
+      // --------------------------------------------------------
+      // Workers 拒絕 LINE Token
+      // --------------------------------------------------------
+
+      if (
+        error.message ===
+        'INVALID_LINE_TOKEN'
+      ) {
+
+        console.warn(
+          '[LINE] Workers rejected ID Token'
+        );
+
+        // 不直接自動重新登入，避免無限循環
+        throw new Error(
+          'LINE_RELOGIN_REQUIRED'
+        );
+
+      }
+
+      throw error;
+
+    }
+
+  }
+
+
+  // ============================================================
+  // 12. Permissions
+  // ============================================================
+
+  function can(permission) {
+
+    if (permission === null) {
+      return true;
+    }
+
+    return state.permissions.includes(
+      permission
+    );
+
+  }
+
+
+  async function loadPermissions() {
+
+    try {
+
+      const data = await api(
+        '/api/auth/permissions'
+      );
+
+      state.permissions =
+        Array.isArray(data.permissions)
+          ? data.permissions
+          : [];
+
+    } catch (error) {
+
+      if (
+        error.status !== 404 &&
+        error.message !== 'NOT_IMPLEMENTED'
+      ) {
+
+        console.warn(
+          '[PERMISSIONS]',
+          error.message
+        );
+
+      }
+
+      // 暫時相容目前的 Workers 架構
+      // 只控制首頁功能顯示
+      // 不代表後端已授權
+
+      state.permissions = [
+        'member.self.read'
+      ];
+
+      if (
+        state.member?.role ===
+          'distributor' &&
+        state.member?.status ===
+          'active'
+      ) {
+
+        state.permissions.push(
+          'member.downline.read',
+          'customer.read'
+        );
+
+      }
+
+    }
+
+  }
+
+
+  // ============================================================
+  // 13. Feature Cards
+  // ============================================================
+
+  function makeCard(item) {
+
+    const button =
+      document.createElement(
+        'button'
+      );
+
+    button.className =
+      'feature-card';
+
+    button.type = 'button';
+
+    const icon =
+      document.createElement(
+        'span'
+      );
+
+    icon.className =
+      'feature-icon';
+
+    icon.textContent =
+      item.icon;
+
+    const title =
+      document.createElement(
+        'strong'
+      );
+
+    title.textContent =
+      item.title;
+
+    const detail =
+      document.createElement(
+        'small'
+      );
+
+    detail.textContent =
+      item.detail;
+
+    button.append(
+      icon,
+      title,
+      detail
+    );
+
+    button.addEventListener(
+      'click',
+      () => {
+
+        if (item.tab) {
+
+          show(
+            item.tab === 'account'
+              ? 'accountView'
+              : 'dashboardView'
+          );
+
+          return;
+
+        }
+
+        if (item.url) {
+
+          location.href =
+            item.url;
+
+        }
+
+      }
+    );
+
+    return button;
+
+  }
+
+
+  // ============================================================
+  // 14. Dashboard
+  // ============================================================
+
+  function renderDashboard() {
+
+    const member =
+      state.member || {};
+
+    $('memberName').textContent =
+      member.name ||
+      member.member_id ||
+      '會員';
+
+    $('memberId').textContent =
+      member.member_id ||
+      '—';
+
+    const roleNames = {
+
+      distributor: '直銷商',
+
+      lifestyle: '生活會員',
+
+      non_member: '一般會員'
+
+    };
+
+    $('memberRole').textContent =
+      roleNames[member.role] ||
+      member.role ||
+      '會員';
+
+    $('accountName').textContent =
+      member.name ||
+      '會員';
+
+    $('accountId').textContent =
+      member.member_id ||
+      '—';
+
+    // ----------------------------------------------------------
+    // Greeting
+    // ----------------------------------------------------------
+
+    const hour =
+      new Date().getHours();
+
+    $('greetingText').textContent =
+      hour < 11
+        ? '早安，歡迎回來'
+        : hour < 18
+          ? '午安，歡迎回來'
+          : '晚安，歡迎回來';
+
+    // ----------------------------------------------------------
+    // Member Features
+    // ----------------------------------------------------------
+
+    const availableFeatures =
+      features.filter(item =>
+        can(item.permission)
+      );
+
+    $('featureGrid').replaceChildren(
+      ...availableFeatures.map(
+        makeCard
+      )
+    );
+
+    // ----------------------------------------------------------
+    // Admin Features
+    // ----------------------------------------------------------
+
+    const availableAdminFeatures =
+      adminFeatures.filter(item =>
+        can(item.permission)
+      );
+
+    $('adminSection').hidden =
+      availableAdminFeatures.length === 0;
+
+    $('adminGrid').replaceChildren(
+      ...availableAdminFeatures.map(
+        makeCard
+      )
+    );
+
+    show('dashboardView');
+
+  }
+
+
+  // ============================================================
+  // 15. Enter Dashboard
+  // ============================================================
+
+  async function enterDashboard() {
+
+    const result = await api(
+      '/api/auth/me'
+    );
+
+    if (!result.member) {
+
+      throw new Error(
+        'MEMBER_NOT_FOUND'
+      );
+
+    }
+
+    state.member =
+      result.member;
+
+    await loadPermissions();
+
+    renderDashboard();
+
+  }
+
+
+  // ============================================================
+  // 16. Initialize Authentication
+  // ============================================================
+
+  async function initialize() {
+
+    if (state.working) {
+      return;
+    }
+
+    state.working = true;
+
+    busy();
+
+    try {
+
+      // --------------------------------------------------------
+      // A. 優先恢復現有 Session
+      // --------------------------------------------------------
+
+      if (state.token) {
+
+        try {
+
+          await enterDashboard();
+
+          return;
+
+        } catch (error) {
+
+          // 只有 Session 無效才清除
+          if (
+            error.status !== 401 &&
+            error.status !== 403
+          ) {
+
+            throw error;
+
+          }
+
+          console.warn(
+            '[AUTH] Session expired'
+          );
+
+          clearSession();
+
+        }
+
+      }
+
+      // --------------------------------------------------------
+      // B. 使用者曾主動登出
+      // --------------------------------------------------------
+
+      if (isManualLogout()) {
+
+        show('guestView');
+
+        return;
+
+      }
+
+      // --------------------------------------------------------
+      // C. LINE 自動登入
+      // --------------------------------------------------------
+
+      busy(
+        '正在使用 LINE 確認身分…'
+      );
+
+      const result =
+        await tryLine();
+
+      if (
+        result === 'success'
+      ) {
+
+        await enterDashboard();
+
+      } else if (
+        result === 'guest'
+      ) {
+
+        show('guestView');
+
+      }
+
+      // redirecting:
+      // 等待瀏覽器跳轉，不再操作畫面
+
+    } catch (error) {
+
+      console.error(
+        '[AUTH]',
+        error
+      );
+
+      fail(
+        errorMessage(error),
+        error
+      );
+
+    } finally {
+
+      state.working = false;
+
+    }
+
+  }
+
+
+  // ============================================================
+  // 17. Password Login
+  // ============================================================
+
+  async function loginPassword(event) {
+
+    event.preventDefault();
+
+    if (state.working) {
+      return;
+    }
+
+    state.working = true;
+
+    busy(
+      '正在登入…'
+    );
+
+    try {
+
+      const identifier =
+        $('identifier').value.trim();
+
+      const password =
+        $('password').value;
+
+      const data = await api(
+        '/api/auth/login',
+        {
+          method: 'POST',
+
+          body: {
+            identifier,
+            password
+          },
+
+          auth: false
+        }
+      );
+
+      saveSession(
+        data.token
+      );
+
+      $('password').value = '';
+
       await enterDashboard();
-    }catch(e){fail('登入失敗：'+e.message);}
-    finally{state.working=false;}
+
+    } catch (error) {
+
+      console.error(
+        '[AUTH] Password login failed',
+        error
+      );
+
+      fail(
+        '登入失敗：' +
+        errorMessage(error),
+        error
+      );
+
+    } finally {
+
+      state.working = false;
+
+    }
+
   }
+
+
+  // ============================================================
+  // 18. Logout
+  // ============================================================
+
   async function logout() {
-    if(!confirm('確定登出會員帳號？'))return;
-    try{await api('/api/auth/logout',{method:'POST'});}catch(e){console.warn('登出 API 回應',e.message);}
-    clearSession();localStorage.setItem(MANUAL_LOGOUT_KEY,'1');
-    // Do not call liff.logout(): manual logout should not force a new LINE redirect.
+
+    if (
+      !confirm(
+        '確定登出會員帳號？'
+      )
+    ) {
+
+      return;
+
+    }
+
+    try {
+
+      await api(
+        '/api/auth/logout',
+        {
+          method: 'POST'
+        }
+      );
+
+    } catch (error) {
+
+      console.warn(
+        '[AUTH] Logout API failed',
+        error.message
+      );
+
+    }
+
+    clearSession();
+
+    localStorage.setItem(
+      CONFIG.MANUAL_LOGOUT_KEY,
+      '1'
+    );
+
+    // 不呼叫 liff.logout()
+    // 避免使用者登出後立即重新 LINE Login
+
     show('guestView');
+
   }
-  $('retryButton').addEventListener('click',initialize);
-  $('manualLoginButton').addEventListener('click',()=>show('passwordView'));
-  $('passwordLoginButton').addEventListener('click',()=>show('passwordView'));
-  $('backToLineButton').addEventListener('click',()=>show('guestView'));
-  $('passwordForm').addEventListener('submit',loginPassword);
-  $('lineLoginButton').addEventListener('click',async()=>{
-    if(state.working)return;
-    state.working=true;busy('正在連線 LINE…');
-    try{
-      localStorage.removeItem(MANUAL_LOGOUT_KEY);
-      const result=await tryLine({interactive:true});
-      if(result==='success')await enterDashboard();
-    }catch(e){fail(e.message);}finally{state.working=false;}
-  });
-  $('logoutButton').addEventListener('click',logout);
-  $('profileButton').addEventListener('click',()=>show('accountView'));
-  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.tab==='account'?'accountView':'dashboardView')));
+
+
+  // ============================================================
+  // 19. Retry
+  // ============================================================
+
+  async function retry() {
+
+    // 一般錯誤：重新執行初始化
+    // LINE Token 錯誤：要求重新 LINE Login
+
+    const error =
+      state.lastError;
+
+    if (
+      error?.message ===
+      'LINE_RELOGIN_REQUIRED'
+    ) {
+
+      try {
+
+        busy(
+          '正在重新登入 LINE…'
+        );
+
+        await reauthenticateLine({
+          force: true
+        });
+
+      } catch (e) {
+
+        fail(
+          errorMessage(e),
+          e
+        );
+
+      }
+
+      return;
+
+    }
+
+    initialize();
+
+  }
+
+
+  // ============================================================
+  // 20. LINE Login Button
+  // ============================================================
+
+  async function loginLine() {
+
+    if (state.working) {
+      return;
+    }
+
+    state.working = true;
+
+    busy(
+      '正在連線 LINE…'
+    );
+
+    try {
+
+      localStorage.removeItem(
+        CONFIG.MANUAL_LOGOUT_KEY
+      );
+
+      const result =
+        await tryLine({
+          interactive: true
+        });
+
+      if (
+        result === 'success'
+      ) {
+
+        await enterDashboard();
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        '[LINE] Login failed',
+        error
+      );
+
+      fail(
+        errorMessage(error),
+        error
+      );
+
+    } finally {
+
+      state.working = false;
+
+    }
+
+  }
+
+
+  // ============================================================
+  // 21. Navigation
+  // ============================================================
+
+  function navigate(tab) {
+
+    if (
+      tab === 'account'
+    ) {
+
+      show('accountView');
+
+    } else {
+
+      show('dashboardView');
+
+    }
+
+  }
+
+
+  // ============================================================
+  // 22. Event Listeners
+  // ============================================================
+
+  $('retryButton').addEventListener(
+    'click',
+    retry
+  );
+
+
+  $('manualLoginButton').addEventListener(
+    'click',
+    () => show('passwordView')
+  );
+
+
+  $('passwordLoginButton').addEventListener(
+    'click',
+    () => show('passwordView')
+  );
+
+
+  $('backToLineButton').addEventListener(
+    'click',
+    () => show('guestView')
+  );
+
+
+  $('passwordForm').addEventListener(
+    'submit',
+    loginPassword
+  );
+
+
+  $('lineLoginButton').addEventListener(
+    'click',
+    loginLine
+  );
+
+
+  $('logoutButton').addEventListener(
+    'click',
+    logout
+  );
+
+
+  $('profileButton').addEventListener(
+    'click',
+    () => navigate('account')
+  );
+
+
+  document
+    .querySelectorAll('[data-tab]')
+    .forEach(button => {
+
+      button.addEventListener(
+        'click',
+        () => {
+
+          navigate(
+            button.dataset.tab
+          );
+
+        }
+      );
+
+    });
+
+
+  // ============================================================
+  // 23. Application Startup
+  // ============================================================
+
   initialize();
+
 })();

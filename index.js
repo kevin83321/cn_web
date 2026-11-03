@@ -789,57 +789,24 @@
 
   }
 
-
   async function loadPermissions() {
 
-    try {
+    const data = await api(
+      '/api/auth/permissions'
+    );
 
-      const data = await api(
-        '/api/auth/permissions'
+    if (
+      !Array.isArray(data.permissions) ||
+      !data.permissions.every(
+        permission => typeof permission === 'string'
+      )
+    ) {
+      throw new Error(
+        'INVALID_PERMISSIONS_RESPONSE'
       );
-
-      state.permissions =
-        Array.isArray(data.permissions)
-          ? data.permissions
-          : [];
-
-    } catch (error) {
-
-      if (
-        error.status !== 404 &&
-        error.message !== 'NOT_IMPLEMENTED'
-      ) {
-
-        console.warn(
-          '[PERMISSIONS]',
-          error.message
-        );
-
-      }
-
-      // 暫時相容目前的 Workers 架構
-      // 只控制首頁功能顯示
-      // 不代表後端已授權
-
-      state.permissions = [
-        'member.self.read'
-      ];
-
-      if (
-        state.member?.role ===
-          'distributor' &&
-        state.member?.status ===
-          'active'
-      ) {
-
-        state.permissions.push(
-          'member.downline.read',
-          'customer.read'
-        );
-
-      }
-
     }
+
+    state.permissions = data.permissions;
 
   }
 

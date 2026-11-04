@@ -133,13 +133,11 @@
   function show(view) {
 
     for (const id of views) {
-
       const element = $(id);
 
       if (element) {
         element.hidden = id !== view;
       }
-
     }
 
     const isAuthenticatedView = [
@@ -153,21 +151,32 @@
       bottomNav.hidden = !isAuthenticatedView;
     }
 
-    $('profileButton').disabled = !state.member;
+    const profileButton = $('profileButton');
+
+    if (profileButton) {
+      profileButton.disabled = !state.member;
+    }
+
+    const currentTab =
+      view === 'accountView' ? 'account' : 'home';
 
     document
-      .querySelectorAll('[data-tab]')
+      .querySelectorAll('[data-nav], [data-tab]')
       .forEach(element => {
 
-        const currentTab =
-          view === 'accountView'
-            ? 'account'
-            : 'home';
+        const tab =
+          element.dataset.nav ||
+          element.dataset.tab;
 
-        element.classList.toggle(
-          'active',
-          element.dataset.tab === currentTab
-        );
+        const active = tab === currentTab;
+
+        element.classList.toggle('active', active);
+
+        if (active) {
+          element.setAttribute('aria-current', 'page');
+        } else {
+          element.removeAttribute('aria-current');
+        }
 
       });
 
@@ -870,14 +879,9 @@
 
         if (item.tab) {
 
-          show(
-            item.tab === 'account'
-              ? 'accountView'
-              : 'dashboardView'
-          );
+          navigate(item.tab);
 
           return;
-
         }
 
         if (item.url) {
@@ -983,7 +987,11 @@
       )
     );
 
-    show('dashboardView');
+    navigate(
+      location.hash === '#account'
+        ? 'account'
+        : 'home'
+    );
 
   }
 
@@ -1353,17 +1361,33 @@
 
   function navigate(tab) {
 
-    if (
-      tab === 'account'
-    ) {
-
-      show('accountView');
-
-    } else {
-
-      show('dashboardView');
-
+    // 尚未完成登入時，不允許切換會員畫面
+    if (!state.member) {
+      return;
     }
+
+    const isAccount = tab === 'account';
+
+    const view = isAccount
+      ? 'accountView'
+      : 'dashboardView';
+
+    const hash = isAccount
+      ? '#account'
+      : '';
+
+    show(view);
+
+    const targetUrl =
+      location.pathname +
+      location.search +
+      hash;
+
+    history.replaceState(
+      null,
+      '',
+      targetUrl
+    );
 
   }
 
@@ -1419,6 +1443,34 @@
     () => navigate('account')
   );
 
+  // ============================================================
+  // Shared App Shell Navigation
+  // ============================================================
+
+  window.addEventListener('cn:navigate', event => {
+
+    const tab = event.detail?.tab;
+
+    if (tab === 'home' || tab === 'account') {
+      navigate(tab);
+    }
+
+  });
+
+  // 支援瀏覽器返回 / 前進造成的 Hash 變化
+  window.addEventListener('hashchange', () => {
+
+    if (!state.member) {
+      return;
+    }
+
+    navigate(
+      location.hash === '#account'
+        ? 'account'
+        : 'home'
+    );
+
+  });
 
   document
     .querySelectorAll('[data-tab]')

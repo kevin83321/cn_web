@@ -3,24 +3,20 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <title>會員階層管理</title>
 
   <link rel="stylesheet" href="./member-hierarchy.css">
 
+<link rel="stylesheet" href="./app-mobile.css">
 </head>
 
 <body>
 
-<main class="wrap">
+<div class="cn-shell"><div class="cn-header"><a class="cn-back" href="./index.html" aria-label="返回首頁">‹</a><div class="cn-header-title"><strong>會員階層</strong><small>CN MEMBER PORTAL</small></div><span class="cn-mark">CN</span></div><div class="cn-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>會員階層</h1><p>掌握組織架構與下線會員資訊</p></div><main class="wrap">
 
-  <div class="topbar">
-    <h1>會員階層管理</h1>
-    <button type="button" id="backToMember" class="muted">
-      返回會員中心
-    </button>
-  </div>
+  <div hidden><button type="button" id="backToMember">返回會員中心</button></div>
 
   <section id="hierarchyPanel" aria-labelledby="hierarchyHeading">
 
@@ -107,7 +103,7 @@
 
   </section>
 
-</main>
+</main><nav class="cn-bottom-nav" aria-label="主要導覽"><a href="./index.html" ><span>⌂</span>首頁</a><a href="./member-hierarchy.html" aria-current="page"><span>♧</span>階層</a><a href="./customer-management.html" ><span>◫</span>客戶</a><a href="./admin-members.html" ><span>▦</span>管理</a></nav></div>
 
 <script src="./member-hierarchy.js"></script>
 

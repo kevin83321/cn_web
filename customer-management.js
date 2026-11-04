@@ -80,12 +80,12 @@
       const cid = esc(r.customer?.member_id);
       const did = esc(r.distributor_member_id);
       return `<tr>
-        <td>${esc(r.customer?.name)}</td>
-        <td><code>${cid}</code></td>
-        <td>${esc(r.customer?.role)}</td>
-        <td><code>${did}</code></td>
-        <td>${esc(r.created_at)}</td>
-        <td class="row-actions">
+        <td data-label="客戶姓名">${esc(r.customer?.name)}</td>
+        <td data-label="客戶 ID"><code>${cid}</code></td>
+        <td data-label="會員類型">${esc(r.customer?.role)}</td>
+        <td data-label="服務直銷商"><code>${did}</code></td>
+        <td data-label="建立時間">${esc(r.created_at)}</td>
+        <td class="row-actions" data-label="操作">
           <button type="button" data-history="${cid}">查看歷史</button>
           ${canManage() ? `<button type="button" data-transfer="${cid}">轉移</button>
           <button type="button" class="danger" data-end="${cid}">結束服務</button>` : ''}
@@ -131,8 +131,8 @@
       if (!Array.isArray(result.services)) throw new Error('API_SERVICES_FORMAT_ERROR');
       $('historyMessage').textContent = `${customerId}：${result.total ?? result.services.length} 筆服務紀錄`;
       $('historyRows').innerHTML = result.services.map(r => `<tr>
-        <td>${esc(r.service_id)}</td><td>${esc(r.distributor_member_id)}</td>
-        <td>${esc(r.status)}</td><td>${esc(r.created_at)}</td>
+        <td data-label="服務 ID">${esc(r.service_id)}</td><td data-label="服務直銷商">${esc(r.distributor_member_id)}</td>
+        <td>${esc(r.status)}</td><td data-label="建立時間">${esc(r.created_at)}</td>
       </tr>`).join('') || '<tr><td colspan="4">沒有可查看的紀錄</td></tr>';
     } catch (error) {
       $('historyMessage').textContent = '查詢失敗：' + explain(error);

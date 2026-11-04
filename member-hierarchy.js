@@ -143,11 +143,11 @@ async function verifySession() {
     $('hierarchyRows').innerHTML =
       items.map(m => `
         <tr>
-          <td>${esc(m.name)}</td>
-          <td><code>${esc(m.member_id)}</code></td>
-          <td>${esc(m.parent_member_id)}</td>
-          <td>${esc(m.depth)}</td>
-          <td>${esc(m.status)}</td>
+          <td data-label="姓名">${esc(m.name)}</td>
+          <td data-label="會員 ID"><code>${esc(m.member_id)}</code></td>
+          <td data-label="直屬上線">${esc(m.parent_member_id)}</td>
+          <td data-label="層級">${esc(m.depth)}</td>
+          <td data-label="狀態">${esc(m.status)}</td>
         </tr>
       `).join('') ||
       '<tr><td colspan="5">沒有符合條件的會員</td></tr>';

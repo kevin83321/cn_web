@@ -1,3 +1,4 @@
+
 /** Shared CN App Shell: DOM only; does not own auth or API sessions. */
 'use strict';
 (()=>{
@@ -20,7 +21,7 @@
  function render(perms){
   nav.innerHTML='';for(const [key,icon,label,url,permission] of items){
    if(permission&&perms&&!perms.includes(permission))continue;
-   if(permission&&!perms)continue; // fail closed when permission request fails
+   if(permission&&!perms)continue;
    const a=document.createElement('a');a.href=url;a.className='nav-item'+((page===key||(page==='audit'&&key==='members'))?' active':'');
    if(page===key||(page==='audit'&&key==='members'))a.setAttribute('aria-current','page');
    const symbol=document.createElement('span');symbol.textContent=icon;

@@ -1,112 +1,78 @@
 
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
-  <title>會員階層管理</title>
-
-  <link rel="stylesheet" href="./member-hierarchy.css">
-
-<link rel="stylesheet" href="./app-mobile.css">
-</head>
-
-<body>
-
-<div class="cn-shell"><div class="cn-header"><a class="cn-back" href="./index.html" aria-label="返回首頁">‹</a><div class="cn-header-title"><strong>會員階層</strong><small>CN MEMBER PORTAL</small></div><span class="cn-mark">CN</span></div><div class="cn-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>會員階層</h1><p>掌握組織架構與下線會員資訊</p></div><main class="wrap">
-
-  <div hidden><button type="button" id="backToMember">返回會員中心</button></div>
-
-  <section id="hierarchyPanel" aria-labelledby="hierarchyHeading">
-
-    <h2 id="hierarchyHeading">我的會員組織</h2>
-
-    <p>
+<head><script defer="" src="./components/app-shell.js?v=20261104-3"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>會員階層管理</title>
+<link href="./member-hierarchy.css" rel="stylesheet"/>
+<link href="./components/app-shell.css?v=20261104-3" rel="stylesheet"/></head>
+<body data-page="hierarchy">
+<div class="app-shell"><header class="app-header" id="appHeader"></header><main class="wrap app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>會員階層</h1><p>掌握組織架構與下線會員資訊</p></div>
+<div hidden=""><button id="backToMember" type="button">返回會員中心</button></div>
+<section aria-labelledby="hierarchyHeading" id="hierarchyPanel">
+<h2 id="hierarchyHeading">我的會員組織</h2>
+<p>
       僅顯示目前登入會員的所有下線。
       資料由 Cloudflare Workers Session 權限決定。
     </p>
-
-    <div class="actions">
-      <button type="button" id="hierarchyReload">
+<div class="actions">
+<button id="hierarchyReload" type="button">
         載入／更新下線資料
       </button>
-
-      <button type="button" id="hierarchyExpand" class="muted">
+<button class="muted" id="hierarchyExpand" type="button">
         全部展開
       </button>
-
-      <button type="button" id="hierarchyCollapse" class="muted">
+<button class="muted" id="hierarchyCollapse" type="button">
         全部收合
       </button>
-    </div>
-
-    <p id="hierarchyMessage" role="status">
+</div>
+<p id="hierarchyMessage" role="status">
       請點擊「載入／更新下線資料」
     </p>
-
-    <hr>
-
-    <h2>會員階層樹</h2>
-
-    <div id="hierarchyTree" class="hierarchy-tree"></div>
-
-    <hr>
-
-    <h2>下線會員列表</h2>
-
-    <label for="hierarchySearch">
+<hr/>
+<h2>會員階層樹</h2>
+<div class="hierarchy-tree" id="hierarchyTree"></div>
+<hr/>
+<h2>下線會員列表</h2>
+<label for="hierarchySearch">
       搜尋姓名、會員 ID、直屬上線
     </label>
-
-    <input
-      id="hierarchySearch"
-      type="search"
-      placeholder="輸入關鍵字"
-    >
-
-    <div class="grid">
-      <div>
-        <label for="hierarchyDepth">層級</label>
-        <select id="hierarchyDepth">
-          <option value="">全部層級</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="hierarchyStatus">狀態</label>
-        <select id="hierarchyStatus">
-          <option value="">全部狀態</option>
-          <option value="active">active</option>
-          <option value="inactive">inactive</option>
-        </select>
-      </div>
-    </div>
-
-    <p id="hierarchyCount"></p>
-
-    <div class="hierarchy-table-wrap">
-      <table class="hierarchy-table">
-        <thead>
-          <tr>
-            <th>姓名</th>
-            <th>會員 ID</th>
-            <th>直屬上線</th>
-            <th>層級</th>
-            <th>狀態</th>
-          </tr>
-        </thead>
-
-        <tbody id="hierarchyRows"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-</main><nav class="cn-bottom-nav" aria-label="主要導覽"><a href="./index.html" ><span>⌂</span>首頁</a><a href="./member-hierarchy.html" aria-current="page"><span>♧</span>階層</a><a href="./customer-management.html" ><span>◫</span>客戶</a><a href="./admin-members.html" ><span>▦</span>管理</a></nav></div>
-
+<input id="hierarchySearch" placeholder="輸入關鍵字" type="search"/>
+<div class="grid">
+<div>
+<label for="hierarchyDepth">層級</label>
+<select id="hierarchyDepth">
+<option value="">全部層級</option>
+</select>
+</div>
+<div>
+<label for="hierarchyStatus">狀態</label>
+<select id="hierarchyStatus">
+<option value="">全部狀態</option>
+<option value="active">active</option>
+<option value="inactive">inactive</option>
+</select>
+</div>
+</div>
+<p id="hierarchyCount"></p>
+<div class="hierarchy-table-wrap">
+<table class="hierarchy-table">
+<thead>
+<tr>
+<th>姓名</th>
+<th>會員 ID</th>
+<th>直屬上線</th>
+<th>層級</th>
+<th>狀態</th>
+</tr>
+</thead>
+<tbody id="hierarchyRows"></tbody>
+</table>
+</div>
+</section>
+</main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div>
 <script src="./member-hierarchy.js"></script>
-
-
 </body>
 </html>

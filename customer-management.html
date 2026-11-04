@@ -1,69 +1,65 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>客戶服務管理</title>
-  <link rel="stylesheet" href="./customer-management.css">
-  <script src="./customer-management.js" defer></script>
-<link rel="stylesheet" href="./app-mobile.css">
-</head>
-<body>
-<div class="cn-shell"><div class="cn-header"><a class="cn-back" href="./index.html" aria-label="返回首頁">‹</a><div class="cn-header-title"><strong>服務客戶</strong><small>CN MEMBER PORTAL</small></div><span class="cn-mark">CN</span></div><div class="cn-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>服務客戶</h1><p>快速查詢、指派及管理服務關係</p></div><main class="wrap">
-  
-  <p>服務客戶與會員上下線分開管理。指派、轉移及結束服務會更新 D1 資料。</p>
-
-  <section class="card" aria-labelledby="manageHeading">
-    <h2 id="manageHeading">服務關係管理</h2>
-    <p id="permissionMessage" role="status">正在確認操作權限…</p>
-    <form id="manageForm">
-      <div class="form-grid">
-        <label>操作
-          <select id="operation" required>
-            <option value="assign">指派服務</option>
-            <option value="transfer">轉移服務</option>
-            <option value="end-service">結束服務</option>
-          </select>
-        </label>
-        <label>客戶會員 ID
-          <input id="customerId" autocomplete="off" required maxlength="100" placeholder="例如 CUSTOMER001">
-        </label>
-        <label id="distributorField">服務直銷商會員 ID
-          <input id="distributorId" autocomplete="off" maxlength="100" placeholder="例如 DIST001">
-        </label>
-      </div>
-      <p class="hint" id="operationHint">指派尚未有有效服務關係的客戶。</p>
-      <button id="submitAction" type="submit" disabled>確認指派</button>
-      <p id="actionMessage" role="status"></p>
-    </form>
-  </section>
-
-  <section aria-labelledby="listHeading">
-    <h2 id="listHeading">目前服務客戶</h2>
-    <div class="actions">
-      <button id="reload" type="button">重新載入</button>
-      <input id="search" type="search" placeholder="搜尋客戶姓名、ID、服務直銷商" aria-label="搜尋客戶">
-    </div>
-    <p id="message" role="status">準備載入資料…</p>
-    <p id="count"></p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>客戶姓名</th><th>客戶 ID</th><th>會員類型</th><th>服務直銷商 ID</th><th>建立時間</th><th>操作</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section id="historyPanel" hidden>
-    <h2>服務關係歷史</h2>
-    <p id="historyMessage" role="status"></p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>服務 ID</th><th>服務直銷商</th><th>狀態</th><th>建立時間</th></tr></thead>
-        <tbody id="historyRows"></tbody>
-      </table>
-    </div>
-  </section>
-</main><nav class="cn-bottom-nav" aria-label="主要導覽"><a href="./index.html" ><span>⌂</span>首頁</a><a href="./member-hierarchy.html" ><span>♧</span>階層</a><a href="./customer-management.html" aria-current="page"><span>◫</span>客戶</a><a href="./admin-members.html" ><span>▦</span>管理</a></nav></div>
+<head><script defer="" src="./components/app-shell.js?v=20261104-3"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>客戶服務管理</title>
+<link href="./customer-management.css" rel="stylesheet"/>
+<script defer="" src="./customer-management.js"></script>
+<link href="./components/app-shell.css?v=20261104-3" rel="stylesheet"/></head>
+<body data-page="customers">
+<div class="app-shell"><header class="app-header" id="appHeader"></header><main class="wrap app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>服務客戶</h1><p>快速查詢、指派及管理服務關係</p></div>
+<p>服務客戶與會員上下線分開管理。指派、轉移及結束服務會更新 D1 資料。</p>
+<section aria-labelledby="manageHeading" class="card">
+<h2 id="manageHeading">服務關係管理</h2>
+<p id="permissionMessage" role="status">正在確認操作權限…</p>
+<form id="manageForm">
+<div class="form-grid">
+<label>操作
+          <select id="operation" required="">
+<option value="assign">指派服務</option>
+<option value="transfer">轉移服務</option>
+<option value="end-service">結束服務</option>
+</select>
+</label>
+<label>客戶會員 ID
+          <input autocomplete="off" id="customerId" maxlength="100" placeholder="例如 CUSTOMER001" required=""/>
+</label>
+<label id="distributorField">服務直銷商會員 ID
+          <input autocomplete="off" id="distributorId" maxlength="100" placeholder="例如 DIST001"/>
+</label>
+</div>
+<p class="hint" id="operationHint">指派尚未有有效服務關係的客戶。</p>
+<button disabled="" id="submitAction" type="submit">確認指派</button>
+<p id="actionMessage" role="status"></p>
+</form>
+</section>
+<section aria-labelledby="listHeading">
+<h2 id="listHeading">目前服務客戶</h2>
+<div class="actions">
+<button id="reload" type="button">重新載入</button>
+<input aria-label="搜尋客戶" id="search" placeholder="搜尋客戶姓名、ID、服務直銷商" type="search"/>
+</div>
+<p id="message" role="status">準備載入資料…</p>
+<p id="count"></p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>客戶姓名</th><th>客戶 ID</th><th>會員類型</th><th>服務直銷商 ID</th><th>建立時間</th><th>操作</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+</section>
+<section hidden="" id="historyPanel">
+<h2>服務關係歷史</h2>
+<p id="historyMessage" role="status"></p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>服務 ID</th><th>服務直銷商</th><th>狀態</th><th>建立時間</th></tr></thead>
+<tbody id="historyRows"></tbody>
+</table>
+</div>
+</section>
+</main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div>
 </body>
 </html>

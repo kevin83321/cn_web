@@ -1,27 +1,27 @@
-<!doctype html>
-<html lang="zh-Hant"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f7f9fc"><title>CN 會員中心</title>
-<link rel="stylesheet" href="./index.css?v=20261104-2">
+<!DOCTYPE html>
+
+<html lang="zh-Hant"><head><script defer="" src="./components/app-shell.js?v=20261104-3"></script>
+<meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<meta content="#f7f9fc" name="theme-color"/><title>CN 會員中心</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="./index.js" defer></script>
-</head><body>
+<script defer="" src="./index.js"></script>
+<link href="./components/app-shell.css?v=20261104-3" rel="stylesheet"/></head><body data-page="home">
 <div class="app-shell">
-<header class="app-header"><div class="brand"><span class="brand-icon">CN</span><div><strong>CN 會員中心</strong><small>Member Portal</small></div></div><button id="profileButton" class="avatar" aria-label="帳號設定" disabled>人</button></header>
+<header class="app-header" id="appHeader"></header>
 <main>
-<section id="loadingView" class="state-view"><div class="spinner"></div><h1>歡迎來到 CN</h1><p id="loadingText">正在確認登入狀態…</p></section>
-<section id="errorView" class="state-view" hidden><div class="state-icon">!</div><h1>暫時無法登入</h1><p id="errorText">請稍後再試</p><button id="retryButton" class="primary">重新嘗試</button><button id="manualLoginButton" class="secondary">使用帳號密碼登入</button></section>
-<section id="guestView" class="state-view" hidden><div class="state-icon line">L</div><h1>歡迎加入 CN</h1><p>使用 LINE 即可快速登入會員中心</p><button id="lineLoginButton" class="line-button">使用 LINE 登入</button><button id="passwordLoginButton" class="text-button">使用會員帳號登入</button></section>
-<section id="passwordView" class="state-view" hidden><h1>會員帳號登入</h1><p>已有會員帳號？請輸入帳號及密碼</p><form id="passwordForm" class="auth-form"><label>帳號<input id="identifier" autocomplete="username" required></label><label>密碼<input id="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">登入</button></form><button id="backToLineButton" class="text-button">返回 LINE 登入</button></section>
-<section id="dashboardView" hidden>
+<section class="state-view" id="loadingView"><div class="spinner"></div><h1>歡迎來到 CN</h1><p id="loadingText">正在確認登入狀態…</p></section>
+<section class="state-view" hidden="" id="errorView"><div class="state-icon">!</div><h1>暫時無法登入</h1><p id="errorText">請稍後再試</p><button class="primary" id="retryButton">重新嘗試</button><button class="secondary" id="manualLoginButton">使用帳號密碼登入</button></section>
+<section class="state-view" hidden="" id="guestView"><div class="state-icon line">L</div><h1>歡迎加入 CN</h1><p>使用 LINE 即可快速登入會員中心</p><button class="line-button" id="lineLoginButton">使用 LINE 登入</button><button class="text-button" id="passwordLoginButton">使用會員帳號登入</button></section>
+<section class="state-view" hidden="" id="passwordView"><h1>會員帳號登入</h1><p>已有會員帳號？請輸入帳號及密碼</p><form class="auth-form" id="passwordForm"><label>帳號<input autocomplete="username" id="identifier" required=""/></label><label>密碼<input autocomplete="current-password" id="password" required="" type="password"/></label><button class="primary" type="submit">登入</button></form><button class="text-button" id="backToLineButton">返回 LINE 登入</button></section>
+<section hidden="" id="dashboardView">
 <div class="greeting"><div><p class="eyebrow" id="greetingText">您好，歡迎回來</p><h1 id="memberName">會員</h1><div class="badge" id="memberRole">會員</div></div><div class="greeting-mark">✦</div></div>
 <div class="member-card"><div><span class="card-label">會員編號</span><strong id="memberId">—</strong></div><span class="card-status"><i></i> 已登入</span></div>
-<section class="feature-section"><div class="section-title"><h2>我的服務</h2><span>快速存取</span></div><div id="featureGrid" class="feature-grid"></div></section>
-<section class="feature-section" id="adminSection" hidden><div class="section-title"><h2>管理功能</h2><span>依權限開放</span></div><div id="adminGrid" class="feature-grid"></div></section>
+<section class="feature-section"><div class="section-title"><h2>我的服務</h2><span>快速存取</span></div><div class="feature-grid" id="featureGrid"></div></section>
+<section class="feature-section" hidden="" id="adminSection"><div class="section-title"><h2>管理功能</h2><span>依權限開放</span></div><div class="feature-grid" id="adminGrid"></div></section>
 <div class="info-card"><span>🔒</span><p>已使用安全連線登入，功能將依會員權限顯示。</p></div>
 </section>
-<section id="accountView" hidden><div class="page-title"><h1>帳號設定</h1><p>管理您的登入狀態</p></div><div class="setting-card"><div><strong id="accountName">—</strong><small id="accountId">—</small></div></div><button id="logoutButton" class="logout-button">登出會員帳號</button></section>
+<section hidden="" id="accountView"><div class="page-title"><h1>帳號設定</h1><p>管理您的登入狀態</p></div><div class="setting-card"><div><strong id="accountName">—</strong><small id="accountId">—</small></div></div><button class="logout-button" id="logoutButton">登出會員帳號</button></section>
 </main>
-<nav id="bottomNav" class="bottom-nav" aria-label="主要導覽" hidden><button type="button" class="nav-item active" data-tab="home"><span>⌂</span><small>首頁</small></button><button type="button" class="nav-item" data-tab="account"><span>◯</span><small>我的</small></button></nav>
+<nav aria-label="主要導覽" class="bottom-nav" hidden="" id="appFooter"></nav>
 </div>
 </body></html>

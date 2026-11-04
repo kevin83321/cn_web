@@ -147,7 +147,11 @@
       'accountView'
     ].includes(view);
 
-    $('bottomNav').hidden = !isAuthenticatedView;
+    const bottomNav = $('appFooter');
+
+    if (bottomNav) {
+      bottomNav.hidden = !isAuthenticatedView;
+    }
 
     $('profileButton').disabled = !state.member;
 

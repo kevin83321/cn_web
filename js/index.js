@@ -113,7 +113,6 @@
       permission: 'admin.members.read',
       url: './admin-members.html'
     },
-
     {
       id: 'adminAudit',
       title: '操作紀錄',
@@ -121,7 +120,16 @@
       icon: '≡',
       permission: 'admin.audit.read',
       url: './admin-audit-logs.html'
-    }
+    },
+    {
+      id: 'adminRoles',
+      title: '系統管理權限',
+      detail: '管理系統權限',
+      icon: '≡',
+      permission: 'admin.audit.read',
+      url: './admin-roles.html'
+    },
+
 
   ];
 

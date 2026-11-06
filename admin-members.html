@@ -11,6 +11,7 @@
   <script src="./components/app-shell.js" defer></script>
   <script src="./js/admin-common.js" defer></script>
   <script src="./js/admin-members.js" defer></script>
+  <script src="./js/admin-system-roles.js" defer></script>
 </head>
 <body data-page="members">
 <div class="app-shell">
@@ -55,6 +56,14 @@
           <div class="phase6-status-row"><span>目前狀態</span><strong id="statusLabel">—</strong></div>
           <button type="button" id="statusToggle" class="phase6-danger" hidden>停用會員</button>
           <p id="statusMessage" class="phase6-feedback" role="status" aria-live="polite"></p>
+        </section>
+        <section class="phase6-section" id="systemRoleSection" hidden aria-labelledby="systemRoleTitle">
+          <h3 id="systemRoleTitle">系統角色管理</h3>
+          <p class="phase6-help">系統角色決定後台權限，與會員類型無關。角色變更後，該會員需要重新登入。</p>
+          <div class="phase6-status-row"><span>管理員（admin）</span><strong id="systemRoleStatus">讀取中…</strong></div>
+          <div id="systemRolePermissions" class="phase6-help"></div>
+          <button type="button" id="systemRoleToggle" hidden>變更管理員角色</button>
+          <p id="systemRoleMessage" class="phase6-feedback" role="status" aria-live="polite"></p>
         </section>
       </section>
       <div class="pager"><button disabled id="previous" type="button">上一頁</button><span id="pageInfo">第 1 頁</span><button disabled id="next" type="button">下一頁</button></div>

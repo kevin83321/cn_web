@@ -1,16 +1,66 @@
 <!DOCTYPE html>
-
-<html lang="zh-Hant"><head><script defer="" src="./components/app-shell.js"></script><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/><meta content="#f4f7fc" name="theme-color"/><title>會員管理 · CN</title><link href="./admin.css" rel="stylesheet"/><script defer="" src="./admin-common.js"></script><script defer="" src="./admin-members.js"></script><link href="./components/app-shell.css" rel="stylesheet"/></head><body data-page="members"><div class="app-shell"><header class="app-header" id="appHeader"></header><main class="app-main"><div class="app-intro"><span class="cn-eyebrow">ADMINISTRATION</span><h1>會員管理</h1><p>搜尋會員與查看基本資料</p></div><section class="cn-panel"><form class="admin-filters" id="filters"><label>關鍵字<input id="query" placeholder="搜尋會員姓名或 ID" type="search"/></label><label>會員類型<select id="role"><option value="">全部類型</option><option value="non_member">一般會員</option><option value="lifestyle">生活會員</option><option value="distributor">直銷商</option></select></label><label>狀態<select id="status"><option value="">全部狀態</option><option value="active">有效</option><option value="inactive">停用</option><option value="suspended">暫停</option></select></label><button type="submit">查詢</button></form></section><section class="cn-panel"><div class="admin-summary"><h2>查詢結果</h2><span id="count">—</span></div><p id="message" role="status">正在確認權限…</p><div class="admin-items" id="items"></div><section id="memberDetail" class="member-detail" hidden aria-labelledby="detailTitle">
-<h2 id="detailTitle">會員詳細資料</h2>
-<p id="detailMessage" role="status"></p>
-<form id="detailForm">
-<label>會員 ID<input id="detailId" readonly></label>
-<label>會員名稱<input id="detailName" maxlength="100" required></label>
-<label>Email<input id="detailEmail" type="email" maxlength="254"></label>
-<label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
-<label>會員類型<input id="detailRole" readonly></label>
-<label>帳號狀態<input id="detailStatus" readonly></label>
-<label>建立時間<input id="detailCreated" readonly></label>
-<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button><button type="button" id="detailClose">關閉</button></div>
-</form>
-</section><div class="pager"><button disabled="" id="previous" type="button">上一頁</button><span id="pageInfo">第 1 頁</span><button disabled="" id="next" type="button">下一頁</button></div></section></main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div></body></html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7fc">
+  <title>會員管理 · CN</title>
+  <link rel="stylesheet" href="./css/admin.css">
+  <link rel="stylesheet" href="./components/app-shell.css">
+  <link rel="stylesheet" href="./css/admin-members-phase6.css">
+  <script src="./components/app-shell.js" defer></script>
+  <script src="./js/admin-common.js" defer></script>
+  <script src="./js/admin-members.js" defer></script>
+</head>
+<body data-page="members">
+<div class="app-shell">
+  <header class="app-header" id="appHeader"></header>
+  <main class="app-main">
+    <div class="app-intro"><span class="cn-eyebrow">ADMINISTRATION</span><h1>會員管理</h1><p>搜尋、查看及管理會員資料</p></div>
+    <section class="cn-panel">
+      <form class="admin-filters" id="filters">
+        <label>關鍵字<input id="query" placeholder="搜尋會員姓名或 ID" type="search"></label>
+        <label>會員類型<select id="role"><option value="">全部類型</option><option value="non_member">一般會員</option><option value="lifestyle">生活會員</option><option value="distributor">直銷商</option></select></label>
+        <label>狀態<select id="status"><option value="">全部狀態</option><option value="active">有效</option><option value="inactive">停用</option><option value="suspended">暫停（唯讀）</option></select></label>
+        <button type="submit">查詢</button>
+      </form>
+    </section>
+    <section class="cn-panel">
+      <div class="admin-summary"><h2>查詢結果</h2><span id="count">—</span></div>
+      <p id="message" role="status">正在確認權限…</p>
+      <div class="admin-items" id="items"></div>
+      <section id="memberDetail" class="member-detail" hidden aria-labelledby="detailTitle">
+        <div class="phase6-detail-head"><h2 id="detailTitle">會員詳細資料</h2><button type="button" id="detailClose" class="phase6-secondary">關閉</button></div>
+        <p id="detailMessage" role="status" aria-live="polite"></p>
+        <form id="detailForm">
+          <label>會員 ID<input id="detailId" readonly></label>
+          <label>會員名稱<input id="detailName" maxlength="100" required></label>
+          <label>Email<input id="detailEmail" type="email" maxlength="254"></label>
+          <label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
+          <label>建立時間<input id="detailCreated" readonly></label>
+          <div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存基本資料</button></div>
+        </form>
+        <section class="phase6-section" aria-labelledby="roleTitle">
+          <h3 id="roleTitle">會員類型管理</h3>
+          <p class="phase6-help">僅調整業務會員類型，不會修改系統管理員角色或權限。</p>
+          <form id="roleForm" class="phase6-form">
+            <label>會員類型<select id="detailRole" disabled><option value="non_member">一般會員</option><option value="lifestyle">生活會員</option><option value="distributor">直銷商</option></select></label>
+            <button id="roleSave" type="submit" hidden>更新會員類型</button>
+          </form>
+          <p id="roleMessage" class="phase6-feedback" role="status" aria-live="polite"></p>
+        </section>
+        <section class="phase6-section" aria-labelledby="statusTitle">
+          <h3 id="statusTitle">帳號狀態管理</h3>
+          <p class="phase6-help">停用會員後，現有 Session 將被撤銷。重新啟用不會自動恢復舊 Session。</p>
+          <div class="phase6-status-row"><span>目前狀態</span><strong id="statusLabel">—</strong></div>
+          <button type="button" id="statusToggle" class="phase6-danger" hidden>停用會員</button>
+          <p id="statusMessage" class="phase6-feedback" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+      <div class="pager"><button disabled id="previous" type="button">上一頁</button><span id="pageInfo">第 1 頁</span><button disabled id="next" type="button">下一頁</button></div>
+    </section>
+  </main>
+  <nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav>
+</div>
+</body>
+</html>

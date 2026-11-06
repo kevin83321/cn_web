@@ -1,0 +1,20 @@
+/* Phase 6 additions; retains admin.css and shared app-shell.css */
+.member-detail { min-width: 0; max-width: 100%; margin-top: 22px; padding: 18px; border: 1px solid #e2e9f5; border-radius: 20px; background: #fff; }
+.phase6-detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.phase6-detail-head h2 { margin: 0; }
+.phase6-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e6ecf6; }
+.phase6-section h3 { margin: 0 0 8px; font-size: 17px; }
+.phase6-help { margin: 0 0 16px; color: #687c9d; font-size: 13px; line-height: 1.65; }
+.phase6-form { display: grid; gap: 12px; }
+.phase6-form label { display: grid; gap: 7px; font-weight: 600; }
+.phase6-form select { width: 100%; min-height: 46px; border: 1px solid #d2dced; border-radius: 12px; padding: 10px 12px; background: #fff; color: #172744; }
+.phase6-form select:disabled { background: #f3f6fb; color: #6d7d96; }
+.phase6-status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 16px; padding: 14px; background: #f5f8ff; border-radius: 12px; }
+.phase6-feedback { min-height: 18px; color: #52698c; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.phase6-secondary, .phase6-danger, .phase6-primary, #roleSave { min-height: 42px; border: 0; border-radius: 12px; padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.phase6-secondary { background: #edf2fb; color: #2d4c85; }
+.phase6-danger { background: #fff0f0; color: #b4232c; }
+.phase6-primary, #roleSave { background: #2859d7; color: #fff; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+[hidden] { display: none !important; }
+@media(max-width: 480px) { .member-detail { padding: 14px; } .phase6-detail-head { align-items: flex-start; } }

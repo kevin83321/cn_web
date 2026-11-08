@@ -1,39 +1,65 @@
 'use strict';
 (() => {
-  // This module attaches to the existing Phase 6 member detail UI without changing its API logic.
   const section = document.getElementById('systemRoleSection');
-  const toggle = document.getElementById('systemRoleToggle');
-  const status = document.getElementById('systemRoleStatus');
+  const items = document.getElementById('items');
+  if (!section || !items) return;
   const message = document.getElementById('systemRoleMessage');
-  const permissionsView = document.getElementById('systemRolePermissions');
-  const detail = document.getElementById('memberDetail');
-  const detailId = document.getElementById('detailId');
-  if (!section || !toggle || !detail) return;
-  let canRead = false, canAssign = false, selectedId = null, enabled = false, busy = false;
-  let actorId = null;
+  const status = document.getElementById('systemRoleStatus');
+  const permissionView = document.getElementById('systemRolePermissions');
+  const oldToggle = document.getElementById('systemRoleToggle');
+  if (oldToggle) oldToggle.remove();
+  let selectedId = null, actorId = null, canRead = false, canAssign = false, busy = false;
+  const roleList = document.createElement('div');
+  roleList.className = 'system-role-list';
+  roleList.id = 'systemRoleList';
+  permissionView.before(roleList);
   const errorText = err => (typeof errors !== 'undefined' && errors[err?.message]) || err?.message || 'UNKNOWN';
   const endpoint = id => '/api/admin/members/' + encodeURIComponent(id) + '/system-roles';
+
   async function refresh() {
     if (!canRead || !selectedId) return;
     const id = selectedId;
     section.hidden = false;
     status.textContent = '讀取中…';
-    toggle.hidden = true;
-    message.textContent = '';
+    roleList.replaceChildren();
+    permissionView.textContent = '';
     try {
       const result = await api(endpoint(id));
-      if (id !== selectedId) return;
-      enabled = (result.roles || []).some(r => r.system_role === 'admin' && Number(r.enabled) === 1);
-      status.textContent = enabled ? '已啟用' : '未啟用';
-      const entries = (result.permissions || []).filter(p => p.system_role === 'admin');
-      permissionsView.textContent = entries.length ? 'admin 權限：' + entries.map(p => p.permission_code + (Number(p.permission_enabled) ? '' : '（停用）')).join('、') : '尚未配置 admin 權限。';
-      toggle.hidden = !canAssign || id === actorId;
-      toggle.textContent = enabled ? '撤銷管理員角色' : '指派管理員角色';
+      if (selectedId !== id) return;
+      const active = new Set((result.roles || []).filter(r => Number(r.enabled) === 1).map(r => r.system_role));
+      status.textContent = `已指派 ${active.size} 個角色`;
+      for (const definition of result.definitions || []) {
+        const row = document.createElement('div');
+        row.className = 'system-role-item';
+        const info = document.createElement('div');
+        const name = document.createElement('strong');
+        name.textContent = `${definition.display_name} (${definition.system_role})`;
+        const state = document.createElement('small');
+        state.textContent = active.has(definition.system_role) ? '已指派' : '未指派';
+        info.append(name, state);
+        row.append(info);
+        if (canAssign && id !== actorId) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.dataset.role = definition.system_role;
+          button.dataset.method = active.has(definition.system_role) ? 'DELETE' : 'PUT';
+          button.textContent = active.has(definition.system_role) ? '撤銷角色' : '指派角色';
+          button.disabled = busy || (result.member_status !== 'active' && !active.has(definition.system_role));
+          row.append(button);
+        }
+        roleList.append(row);
+      }
+      if (!(result.definitions || []).length) status.textContent = '尚無可用角色';
+      const effective = (result.permissions || []).filter(p => active.has(p.system_role) && Number(p.permission_enabled) === 1);
+      permissionView.textContent = effective.length
+        ? '已指派角色的權限：' + [...new Set(effective.map(p => p.permission_code))].join('、')
+        : '目前沒有已指派角色的啟用權限。';
     } catch (err) {
-      status.textContent = '無法讀取';
+      status.textContent = '讀取失敗';
       message.textContent = '讀取失敗：' + errorText(err);
     }
   }
+
   async function init() {
     if (typeof TOKEN === 'undefined' || !TOKEN) return;
     try {
@@ -43,39 +69,43 @@
       if (!canRead) return;
       const me = await api('/api/auth/me');
       actorId = me.member?.member_id || null;
-    } catch (_) { return; }
+    } catch (_) { /* existing auth UI handles authentication */ }
   }
-  // The detail form is populated asynchronously by Phase 6 code. Observe its ID field.
-  // Poll-free MutationObserver does not detect input.value property assignments, so hook
-  // into the detail-opening click and fetch after the existing detail request settles.
-  document.getElementById('items')?.addEventListener('click', async e => {
+
+  items.addEventListener('click', e => {
     const button = e.target.closest('[data-member-id]');
     if (!button || !canRead) return;
     selectedId = button.dataset.memberId;
-    section.hidden = false;
-    await refresh();
+    message.textContent = '';
+    refresh();
   });
   document.getElementById('detailClose')?.addEventListener('click', () => {
     selectedId = null;
     section.hidden = true;
   });
-  toggle.addEventListener('click', async () => {
-    if (!selectedId || !canAssign || busy || selectedId === actorId) return;
-    const id = selectedId;
-    const method = enabled ? 'DELETE' : 'PUT';
-    const verb = enabled ? '撤銷' : '指派';
-    if (!confirm(`確定${verb}會員 ${id} 的 admin 系統角色？\n角色變更後，該會員的既有 Session 將失效。`)) return;
+  roleList.addEventListener('click', async e => {
+    const button = e.target.closest('button[data-role]');
+    if (!button || !selectedId || !canAssign || busy || selectedId === actorId) return;
+    const id = selectedId, code = button.dataset.role, method = button.dataset.method;
+    const verb = method === 'PUT' ? '指派' : '撤銷';
+    if (!confirm(`確定要對 ${id} ${verb}「${code}」系統角色？\n異動後，該會員現有 Session 將失效。`)) return;
     busy = true;
-    toggle.disabled = true;
+    for (const b of roleList.querySelectorAll('button')) b.disabled = true;
     message.textContent = '處理中…';
     try {
-      const result = await api(endpoint(id) + '/admin', { method });
+      const result = await api(endpoint(id) + '/' + encodeURIComponent(code), { method });
       if (id !== selectedId) return;
       await refresh();
-      message.textContent = result.changed ? `${verb}成功，稽核紀錄已建立。` : '角色沒有變更。';
+      message.textContent = result.changed ? `${verb}成功，已記錄稽核並撤銷現有 Session。` : '角色沒有變更。';
     } catch (err) {
-      if (id === selectedId) { message.textContent = '更新失敗：' + errorText(err); await refresh(); }
-    } finally { busy = false; toggle.disabled = false; }
+      if (id === selectedId) {
+        message.textContent = '更新失敗：' + errorText(err);
+        await refresh();
+      }
+    } finally {
+      busy = false;
+      if (id === selectedId) await refresh();
+    }
   });
   init();
 })();

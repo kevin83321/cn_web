@@ -1,0 +1,7 @@
+.system-role-list { display: grid; gap: 10px; margin: 14px 0; }
+.system-role-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #dbe5f4; border-radius: 12px; background: #fff; }
+.system-role-item strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
+.system-role-item small { display: block; margin-top: 5px; color: #63748f; }
+.system-role-item button { flex-shrink: 0; border: 0; border-radius: 9px; padding: 10px 12px; background: #e8efff; color: #2257c4; font-weight: 600; }
+.system-role-item button:disabled { opacity: .45; }
+@media (max-width: 360px) { .system-role-item { align-items: stretch; flex-direction: column; } .system-role-item button { width: 100%; } }

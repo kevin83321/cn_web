@@ -72,7 +72,7 @@
     if(!TOKEN){location.replace('./index.html');return;}
     try{
       const p=await api('/api/auth/permissions');granted=p.permissions||[];
-      if(!granted.includes('admin.roles.catalog.read')){message('沒有角色目錄檢視權限');return;}
+      if(!granted.includes('admin.roles.catalog.read')){window.CNAuthGuard.redirect('FORBIDDEN');return;}
       $id('createSection').hidden=!granted.includes('admin.roles.create');
       await load();
     }catch(e){message('讀取失敗：'+e.message);}

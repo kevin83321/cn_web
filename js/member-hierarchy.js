@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 let sessionToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
 
 async function api(action, extra = {}) {
+  await window.CNAuthGuardReady;
   const routes = {
     me: '/api/auth/me',
     member_self: '/api/members/me',

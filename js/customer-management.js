@@ -25,6 +25,7 @@
   }
 
   async function request(path, method = 'GET', body = undefined) {
+    await window.CNAuthGuardReady;
     const response = await fetch(API_BASE + path, {
       method,
       cache: 'no-store',

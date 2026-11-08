@@ -86,7 +86,7 @@
       permissions.profile = granted.includes('admin.members.update');
       permissions.role = granted.includes('admin.members.role.update');
       permissions.status = granted.includes('admin.members.status.update');
-      if (!permissions.read) { $('message').textContent = '此帳號沒有管理員查詢權限'; return; }
+      if (!permissions.read) { window.CNAuthGuard.redirect('FORBIDDEN'); return; }
       // Actor identity is only a UI safeguard; the Worker independently blocks self-deactivation.
       try {
         const me = await api('/api/members/me');

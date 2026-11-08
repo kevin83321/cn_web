@@ -126,7 +126,7 @@
       title: '系統管理權限',
       detail: '管理系統權限',
       icon: '≡',
-      permission: 'admin.audit.read',
+      permission: 'admin.roles.catalog.read',
       url: './admin-roles.html'
     },
 
@@ -1029,6 +1029,13 @@
 
     renderDashboard();
 
+    // A valid session with insufficient permission remains signed in.
+    const reason = new URLSearchParams(location.search).get('auth_error');
+    if (reason === 'FORBIDDEN') {
+      history.replaceState(null, '', location.pathname + location.hash);
+      alert('沒有使用此功能的權限，已返回首頁。');
+    }
+
   }
 
 
@@ -1047,6 +1054,20 @@
     busy();
 
     try {
+
+      // Redirects from protected pages should show login instead of
+      // silently signing in through LINE again.
+      const reason = new URLSearchParams(location.search).get('auth_error');
+      if (reason === 'SESSION_EXPIRED' || reason === 'MEMBER_INACTIVE') {
+        clearSession();
+        localStorage.setItem(CONFIG.MANUAL_LOGOUT_KEY, '1');
+        history.replaceState(null, '', location.pathname + location.hash);
+        show('guestView');
+        alert(reason === 'MEMBER_INACTIVE'
+          ? '帳號已停用，請聯絡管理員。'
+          : '登入已失效，請重新登入。');
+        return;
+      }
 
       // --------------------------------------------------------
       // A. 優先恢復現有 Session

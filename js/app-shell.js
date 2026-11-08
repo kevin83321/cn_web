@@ -16,6 +16,27 @@
 
 'use strict';
 
+// App Shell 是全站共用入口；只有受保護頁面才載入 Auth Guard。
+// 使用 Promise 確保頁面 API 呼叫前，攔截器已完成安裝。
+window.CNAuthGuardReady = (() => {
+  const page = location.pathname.split('/').pop().toLowerCase();
+  if (!page || ['index.html', 'register.html', 'login.html'].includes(page)) {
+    return Promise.resolve(null);
+  }
+  if (window.CNAuthGuard) return Promise.resolve(window.CNAuthGuard);
+  const source = document.currentScript && document.currentScript.src;
+  const url = new URL('./auth-guard.js', source || location.href);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = url.href;
+    script.onload = () => window.CNAuthGuard
+      ? resolve(window.CNAuthGuard)
+      : reject(new Error('AUTH_GUARD_NOT_INITIALIZED'));
+    script.onerror = () => reject(new Error('AUTH_GUARD_LOAD_FAILED'));
+    document.head.appendChild(script);
+  });
+})();
+
 (() => {
   const root = document.querySelector('.app-shell');
 

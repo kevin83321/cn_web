@@ -6,6 +6,7 @@
   const $ = id => document.getElementById(id);
   const token = () => localStorage.getItem('member_session_token') || sessionStorage.getItem('member_session_token') || '';
   const show = (message, error=false) => { $('message').textContent=message; $('message').style.color=error?'#b42318':'#3156ac'; };
+  const notify = (message, error=false) => { show(message, error); window.alert(message); };
   let status = null;
   async function api(path, options={}) {
     const t=token();
@@ -62,11 +63,11 @@
   async function changePassword(event) {
     event.preventDefault();
     const form=event.currentTarget, current=form.elements.current.value, next=form.elements.next.value;
-    if(next!==form.elements.confirm.value) {show('新密碼與確認密碼不一致',true);return;}
-    if(!/^(?=.{12,128}$)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/.test(next)) {show('密碼需 12–128 字元，包含英文大小寫、數字及特殊符號',true);return;}
+    if(next!==form.elements.confirm.value) {notify('新密碼與確認密碼不一致',true);return;}
+    if(!/^(?=.{12,128}$)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/.test(next)) {notify('密碼需 12–128 字元，包含英文大小寫、數字及特殊符號',true);return;}
     const button=form.querySelector('button[type=submit]');button.disabled=true;
-    try {await api('/api/auth/change-password',{method:'POST',body:{current_password:current,new_password:next}});form.reset();show('密碼已更新，其他裝置的 Session 已撤銷');await refresh();}
-    catch(e){show('密碼更新失敗：'+e.message,true);}
+    try {await api('/api/auth/change-password',{method:'POST',body:{current_password:current,new_password:next}});form.reset();notify('密碼修改成功！其他裝置的 Session 已撤銷。');await refresh();}
+    catch(e){notify('密碼修改失敗：'+e.message,true);}
     finally{button.disabled=false;}
   }
   document.addEventListener('DOMContentLoaded',async()=>{

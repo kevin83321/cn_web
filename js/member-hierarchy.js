@@ -65,7 +65,7 @@ async function verifySession() {
 (() => {
   'use strict';
 
-  // Shared $ helper declared above.
+  const $ = id => document.getElementById(id);
 
   const state = {
     members: [],
@@ -144,11 +144,11 @@ async function verifySession() {
     $('hierarchyRows').innerHTML =
       items.map(m => `
         <tr>
-          <td data-label="姓名">${esc(m.name)}</td>
-          <td data-label="會員 ID"><code>${esc(m.member_id)}</code></td>
-          <td data-label="直屬上線">${esc(m.parent_member_id)}</td>
-          <td data-label="層級">${esc(m.depth)}</td>
-          <td data-label="狀態">${esc(m.status)}</td>
+          <td>${esc(m.name)}</td>
+          <td><code>${esc(m.member_id)}</code></td>
+          <td>${esc(m.parent_member_id)}</td>
+          <td>${esc(m.depth)}</td>
+          <td>${esc(m.status)}</td>
         </tr>
       `).join('') ||
       '<tr><td colspan="5">沒有符合條件的會員</td></tr>';
@@ -282,7 +282,7 @@ async function verifySession() {
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Downline received:', result.success);
+      console.log('[HIERARCHY] Downline response:', result);
 
       if (!result.success) {
         throw new Error(
@@ -298,7 +298,7 @@ async function verifySession() {
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Self received:', own.success);
+      console.log('[HIERARCHY] Self response:', own);
 
       if (!own.success || !own.member) {
         throw new Error(
@@ -447,15 +447,3 @@ async function verifySession() {
     init();
   }
 })();
-
-
-// Session check before loading protected member data.
-document.addEventListener('DOMContentLoaded', async () => {
-  $('backToMember').addEventListener('click', () => { location.href = './index.html'; });
-  try {
-    if (await verifySession()) await window.Stage8Hierarchy.load();
-  } catch (error) {
-    console.error('[HIERARCHY] Session check failed:', error);
-    $('hierarchyMessage').textContent = '無法驗證登入狀態：' + (error.message || String(error));
-  }
-});

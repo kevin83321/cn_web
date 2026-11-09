@@ -948,6 +948,17 @@
       member.member_id ||
       '—';
 
+    // Phase 8.3: account-security entry point (insert only once).
+    if (!$('cnSecuritySettingsLink')) {
+      const link = document.createElement('a');
+      link.id = 'cnSecuritySettingsLink';
+      link.href = './account-security.html';
+      link.textContent = '登入與安全設定 ›';
+      link.style.cssText = 'display:block;margin:16px 0;padding:16px;border-radius:12px;background:#eef2ff;color:#214ec9;text-decoration:none;font-weight:700;text-align:center';
+      $('accountId').closest('.setting-card')?.insertAdjacentElement('afterend', link);
+    }
+
+
     // ----------------------------------------------------------
     // Greeting
     // ----------------------------------------------------------

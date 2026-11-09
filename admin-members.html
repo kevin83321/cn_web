@@ -13,7 +13,7 @@
   <script src="./js/admin-common.js" defer></script>
   <script src="./js/admin-members.js" defer></script>
   <script src="./js/admin-system-roles.js" defer></script>
-</head>
+<link rel="stylesheet" href="./css/admin-accounts.css"></head>
 <body data-page="members">
 <div class="app-shell">
   <header class="app-header" id="appHeader"></header>
@@ -58,6 +58,13 @@
           <button type="button" id="statusToggle" class="phase6-danger" hidden>停用會員</button>
           <p id="statusMessage" class="phase6-feedback" role="status" aria-live="polite"></p>
         </section>
+        <section class="phase6-section" id="authAccountSection" hidden aria-labelledby="authAccountTitle">
+          <h3 id="authAccountTitle">登入帳號管理</h3>
+          <p class="phase6-help">查看登入方式與密碼登入鎖定狀態；不顯示密碼或 LINE User ID。</p>
+          <div id="authAccountInfo" class="phase6-help">讀取中…</div>
+          <button id="authAccountUnlock" type="button" hidden>解除帳號鎖定</button>
+          <p id="authAccountMessage" class="phase6-feedback" role="status" aria-live="polite"></p>
+        </section>
         <section class="phase6-section" id="systemRoleSection" hidden aria-labelledby="systemRoleTitle">
           <h3 id="systemRoleTitle">系統角色管理</h3>
           <p class="phase6-help">系統角色決定後台權限，與會員類型無關。角色變更後，該會員需要重新登入。</p>
@@ -72,5 +79,5 @@
   </main>
   <nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav>
 </div>
-</body>
+<script defer src="./js/admin-accounts.js"></script></body>
 </html>

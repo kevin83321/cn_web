@@ -108,13 +108,38 @@
     catch(e) {sessionMessage('操作失敗：'+e.message,true);alert('操作失敗：'+e.message);}
     finally {button.disabled=false;}
   }
+  const eventLabels = {
+    password_login_success:'密碼登入成功',password_login_failed:'密碼登入失敗',
+    password_account_locked:'密碼帳號鎖定',line_login_success:'LINE 登入成功',
+    member_password_change:'會員修改密碼',admin_auth_account_password_reset:'管理員重設密碼',
+    admin_auth_account_unlock:'管理員解除帳號鎖定',
+    member_session_revoke:'登出指定裝置',member_sessions_revoke_others:'登出其他所有裝置'
+  };
+  async function refreshSecurityEvents() {
+    const list=$('securityEventsList'), message=$('securityEventsMessage');
+    message.textContent='正在載入安全紀錄…';
+    try {
+      const data=await api('/api/auth/security-events?limit=30');
+      list.replaceChildren();
+      const events=data.events||[];
+      message.textContent=events.length?`最近 ${events.length} 筆安全紀錄`:'目前沒有安全紀錄';
+      for(const item of events) {
+        const card=document.createElement('article');card.className='security-event';
+        const title=document.createElement('strong');title.textContent=eventLabels[item.type]||'帳號安全事件';
+        const detail=document.createElement('div');detail.className='session-meta';
+        detail.textContent=formatDate(item.at)+(item.device?' ｜ '+item.device:'');
+        card.append(title,detail);list.append(card);
+      }
+    } catch(e) { message.textContent='載入失敗：'+e.message; }
+  }
   document.addEventListener('DOMContentLoaded',async()=>{
     $('refreshSessions').addEventListener('click',refreshSessions);
+    $('refreshSecurityEvents').addEventListener('click',refreshSecurityEvents);
     $('revokeOtherSessions').addEventListener('click',revokeOthers);
     $('passwordForm').addEventListener('submit',changePassword);
     $('bindLine').addEventListener('click',bindLine);
     $('unbindLine').addEventListener('click',unbindLine);
-    try {if(window.CNAuthGuardReady) await window.CNAuthGuardReady;await refresh();show('');await refreshSessions();}
+    try {if(window.CNAuthGuardReady) await window.CNAuthGuardReady;await refresh();show('');await refreshSessions();await refreshSecurityEvents();}
     catch(e){show('載入失敗：'+e.message,true);return;}
     if(sessionStorage.getItem('cn_security_line_bind')==='1') {
       sessionStorage.removeItem('cn_security_line_bind');

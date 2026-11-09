@@ -9,11 +9,11 @@
 
   <link rel="stylesheet" href="./css/index.css">
   <link rel="stylesheet" href="./css/app-shell.css">
-  <link rel="stylesheet" href="./css/cn-polish.css">
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="./js/app-shell.js" defer></script>
-  <script src="./js/index.js" defer></script>
+  <script src="./js/index.js" type="module"></script>
+  <link rel="stylesheet" href="./css/cn-polish.css">
 </head>
 
 <body>
@@ -97,48 +97,6 @@
 
         <div id="featureGrid" class="feature-grid"></div>
 
-        <!-- Phase 8.6.3: Invite Member -->
-        <div id="inviteMemberContainer" hidden>
-          <a id="inviteMemberEntry"
-             href="./invite-create.html"
-             class="invite-feature-card">
-            <span class="invite-feature-icon">👥</span>
-            <span class="invite-feature-text">
-              <strong>邀請新會員</strong>
-              <small>建立邀請連結，邀請下線加入</small>
-            </span>
-            <span class="invite-feature-arrow">›</span>
-          </a>
-        </div>
-      </section>
-
-      <section class="feature-section" id="adminSection" hidden>
-        <div class="section-title">
-          <h2>管理功能</h2>
-          <span>依權限開放</span>
-        </div>
-        <div id="adminGrid" class="feature-grid"></div>
-      </section>
-
-      <div class="info-card">
-        <span>🔒</span>
-        <p>已使用安全連線登入，功能將依會員權限顯示。</p>
-      </div>
-    </section>
-
-    <section id="accountView" hidden>
-      <div class="page-title">
-        <h1>帳號設定</h1>
-        <p>管理您的登入狀態</p>
-      </div>
-
-      <div class="setting-card">
-        <div>
-          <strong id="accountName">—</strong>
-          <small id="accountId">—</small>
-        </div>
-      </div>
-
       <button id="logoutButton" class="logout-button">
         登出會員帳號
       </button>
@@ -146,12 +104,6 @@
   </main>
 
   <div id="appFooter" hidden></div>
-
-  <button id="profileButton"
-          type="button"
-          hidden
-          disabled
-          aria-label="帳號設定"></button>
 </div>
 </body>
 </html>

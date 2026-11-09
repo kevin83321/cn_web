@@ -10,13 +10,13 @@
   <link rel="stylesheet" href="./css/admin-members-phase6.css">
   <link rel="stylesheet" href="./css/admin-system-roles.css">
   <link rel="stylesheet" href="./css/admin-accounts.css">
-  <script src="./js/app-shell.js" defer></script>
-  <script src="./js/admin-common.js" defer></script>
-  <script src="./js/admin-accounts.js" defer></script>
-  <script src="./js/admin-members.js" defer></script>
-  <script src="./js/admin-system-roles.js" defer></script>
-  <script src="./js/admin-password-reset.js" defer></script>
   <link rel="stylesheet" href="./css/cn-polish.css">
+  <script src="./js/app-shell.js" defer></script>
+  
+  
+  <script type="module" src="./js/admin-members.js"></script>
+  
+  
 </head>
 <body data-page="members">
 <div class="app-shell">
@@ -82,5 +82,22 @@
     </section>
   </main>
   <nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav>
-</div></body>
+</div>
+<script type="module">
+  import { $, esc, api, getToken, errors } from './js/admin-common.js';
+  // Transitional support for additional legacy admin modules.
+  Object.assign(window, { $, esc, api, errors });
+  Object.defineProperty(window, 'TOKEN', { configurable: true, get: getToken });
+  for (const name of ['admin-accounts', 'admin-system-roles', 'admin-password-reset']) {
+    const script = document.createElement('script');
+    script.src = './js/' + name + '.js';
+    script.defer = true;
+    document.body.appendChild(script);
+    await new Promise((resolve, reject) => {
+      script.onload = resolve;
+      script.onerror = reject;
+    });
+  }
+</script>
+</body>
 </html>

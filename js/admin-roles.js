@@ -1,4 +1,5 @@
 'use strict';
+import { $, esc, api, getToken, errors } from './admin-common.js';
 (()=>{
   const $id=id=>document.getElementById(id);
   const permissionLabels={
@@ -9,6 +10,7 @@
     'admin.roles.create':'建立角色','admin.roles.permissions.manage':'設定角色權限'
   };
   let catalog=null, selected=null, granted=[];
+  let originalPermissions = new Set();
   function message(text){$id('notice').textContent=text;}
   function textNode(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
   async function load(){
@@ -30,6 +32,7 @@
       const d=await api('/api/admin/roles/'+encodeURIComponent(code)+'/permissions');
       selected=d.role;
       const existing=new Set((d.permissions||[]).map(p=>p.permission_code));
+      originalPermissions = existing;
       $id('editTitle').textContent=d.role.display_name+' · 權限設定';
       $id('editInfo').textContent=d.role.protected?'此為受保護角色，僅可檢視權限。':'勾選權限後儲存，受影響會員將需要重新登入。';
       const canEdit=granted.includes('admin.roles.permissions.manage')&&!d.role.protected;
@@ -58,7 +61,11 @@
   });
   $id('permissionForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!selected||selected.protected||!granted.includes('admin.roles.permissions.manage'))return;
-    const permissions=Array.from($id('permissionOptions').querySelectorAll('input:checked')).map(e=>e.value);
+    const inputs = Array.from($id('permissionOptions').querySelectorAll('input[type=checkbox]'));
+    const permissions = [...new Set([
+      ...inputs.filter(input => !input.disabled && input.checked).map(input => input.value),
+      ...Array.from(originalPermissions).filter(code => !inputs.some(input => input.value === code && !input.disabled))
+    ])];
     if(!confirm(`確定更新「${selected.display_name}」的權限？此角色會員將需要重新登入。`))return;
     $id('saveButton').disabled=true;
     try{
@@ -69,7 +76,7 @@
     finally{$id('saveButton').disabled=false;}
   });
   async function init(){
-    if(!TOKEN){location.replace('./index.html');return;}
+    if(!getToken()){location.replace('./index.html');return;}
     try{
       const p=await api('/api/auth/permissions');granted=p.permissions||[];
       if(!granted.includes('admin.roles.catalog.read')){window.CNAuthGuard.redirect('FORBIDDEN');return;}

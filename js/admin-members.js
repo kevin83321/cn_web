@@ -1,6 +1,7 @@
 'use strict';
+import { $, esc, api, getToken, errors } from './admin-common.js';
 (() => {
-  // admin-common.js provides $, esc, api, TOKEN, errors.
+  // admin-common.js provides $, esc, api, getToken(), errors.
   const state = { page: 1, pageSize: 20, total: 0, loading: false };
   const permissions = { read: false, profile: false, role: false, status: false };
   const roleNames = { distributor: '直銷商', lifestyle: '生活會員', non_member: '一般會員' };
@@ -78,7 +79,7 @@
   let actorId = null;
   function currentActorId() { return actorId; }
   async function init() {
-    if (!TOKEN) { location.replace('./index.html'); return; }
+    if (!getToken()) { location.replace('./index.html'); return; }
     try {
       const p = await api('/api/auth/permissions');
       const granted = Array.isArray(p.permissions) ? p.permissions : [];

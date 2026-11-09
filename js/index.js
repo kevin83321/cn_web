@@ -1004,6 +1004,40 @@
   }
 
 
+  function showMandatoryPasswordChange() {
+    let modal = document.getElementById('cnMandatoryPasswordChange');
+    if (!modal) {
+      modal = document.createElement('section');
+      modal.id = 'cnMandatoryPasswordChange';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-label', '必須修改密碼');
+      modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#f4f7fc;overflow:auto;padding:24px;display:grid;place-items:center';
+      const panel = document.createElement('form');
+      panel.style.cssText = 'width:min(100%,420px);background:white;border-radius:16px;padding:24px;display:grid;gap:12px;box-shadow:0 4px 20px #0002';
+      const heading = document.createElement('h2');heading.textContent='請先修改密碼';
+      const description = document.createElement('p');description.textContent='此帳號需要更新密碼，完成前無法使用會員功能。新密碼至少 12 字元，包含大小寫英文、數字及特殊符號。';
+      const current = document.createElement('input');current.type='password';current.required=true;current.autocomplete='current-password';current.placeholder='目前密碼／臨時密碼';
+      const next = document.createElement('input');next.type='password';next.required=true;next.autocomplete='new-password';next.placeholder='新密碼';next.minLength=12;
+      const confirmPassword = document.createElement('input');confirmPassword.type='password';confirmPassword.required=true;confirmPassword.autocomplete='new-password';confirmPassword.placeholder='再次輸入新密碼';
+      const message=document.createElement('p');message.setAttribute('role','status');
+      const submit=document.createElement('button');submit.type='submit';submit.textContent='修改密碼';
+      panel.append(heading,description,current,next,confirmPassword,message,submit);
+      panel.addEventListener('submit',async event=>{
+        event.preventDefault();if(next.value!==confirmPassword.value){message.textContent='兩次新密碼不一致';return;}
+        submit.disabled=true;message.textContent='正在更新…';
+        try {
+          await api('/api/auth/change-password',{method:'POST',body:{current_password:current.value,new_password:next.value}});
+          current.value=next.value=confirmPassword.value='';modal.remove();
+          await enterDashboard();
+        } catch(error) {message.textContent='修改失敗：'+errorMessage(error);}
+        finally {submit.disabled=false;}
+      });
+      modal.append(panel);document.body.append(modal);
+    }
+    show('loadingView');
+  }
+
   // ============================================================
   // 15. Enter Dashboard
   // ============================================================
@@ -1020,6 +1054,11 @@
         'MEMBER_NOT_FOUND'
       );
 
+    }
+
+    if (result.password_change_required) {
+      showMandatoryPasswordChange();
+      return;
     }
 
     state.member =

@@ -15,7 +15,7 @@
   function redirect(reason) {
     if (navigating) return;
     navigating = true;
-    if (reason !== 'FORBIDDEN') {
+    if (reason !== 'FORBIDDEN' && reason !== 'PASSWORD_CHANGE_REQUIRED') {
       localStorage.removeItem(KEY);
       sessionStorage.removeItem(KEY);
       // Prevent automatic LINE sign-in immediately after a revoked session.
@@ -37,6 +37,7 @@
       const body = await res.clone().json().catch(() => ({}));
       if (body.error === 'MEMBER_INACTIVE') redirect('MEMBER_INACTIVE');
       else if (body.error === 'FORBIDDEN') redirect('FORBIDDEN');
+      else if (body.error === 'PASSWORD_CHANGE_REQUIRED') redirect('PASSWORD_CHANGE_REQUIRED');
     }
     return res;
   };
@@ -52,6 +53,7 @@
         const body = await res.json().catch(() => ({}));
         if (body.error === 'MEMBER_INACTIVE') redirect('MEMBER_INACTIVE');
       }
+      else if (res.ok) { const body=await res.json().catch(()=>({})); if(body.password_change_required) redirect('PASSWORD_CHANGE_REQUIRED'); }
     }).catch(() => { /* Network errors must not log users out. */ });
   }
   window.CNAuthGuard = { redirect, isRedirecting: () => navigating };

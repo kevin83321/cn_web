@@ -70,11 +70,51 @@
     catch(e){notify('密碼修改失敗：'+e.message,true);}
     finally{button.disabled=false;}
   }
+  const formatDate = value => { const d = new Date(value); return Number.isNaN(d.getTime()) ? '未知' : d.toLocaleString('zh-TW'); };
+  const sessionMessage = (message, error=false) => { $('sessionsMessage').textContent=message; $('sessionsMessage').style.color=error?'#b42318':'#3156ac'; };
+  async function refreshSessions() {
+    const container=$('sessionList');
+    sessionMessage('正在載入登入裝置…');
+    try {
+      const data=await api('/api/auth/sessions');
+      container.replaceChildren();
+      const sessions=data.sessions||[];
+      if(!sessions.length) { sessionMessage('沒有有效的登入工作階段'); return; }
+      sessionMessage(`目前有 ${sessions.length} 個有效 Session`);
+      for(const session of sessions) {
+        const card=document.createElement('article');card.className='session-card'+(session.is_current?' current':'');
+        const title=document.createElement('div');title.className='session-title';
+        title.textContent=(session.is_current?'目前使用的裝置 · ':'')+(session.user_agent||'未知裝置');
+        const meta=document.createElement('div');meta.className='session-meta';
+        meta.textContent=`登入：${formatDate(session.created_at)} ｜ 最後活動：${formatDate(session.last_seen_at)} ｜ 到期：${formatDate(session.expires_at)}`;
+        card.append(title,meta);
+        if(!session.is_current) {
+          const button=document.createElement('button');button.className='secondary';button.type='button';button.textContent='登出此裝置';
+          button.addEventListener('click',async()=>{
+            if(!confirm('確定登出這個裝置？')) return;
+            button.disabled=true;
+            try { await api('/api/auth/sessions/'+encodeURIComponent(session.session_id)+'/revoke',{method:'POST'});await refreshSessions();alert('已登出指定裝置'); }
+            catch(e) {sessionMessage('登出失敗：'+e.message,true);alert('登出失敗：'+e.message);button.disabled=false;}
+          });card.append(button);
+        }
+        container.append(card);
+      }
+    } catch(e) { sessionMessage('載入失敗：'+e.message,true); }
+  }
+  async function revokeOthers() {
+    if(!confirm('確定登出其他所有裝置？目前這個裝置會保留登入。')) return;
+    const button=$('revokeOtherSessions');button.disabled=true;
+    try { const data=await api('/api/auth/sessions/revoke-others',{method:'POST'});await refreshSessions();alert(`已登出 ${data.revoked} 個其他裝置`); }
+    catch(e) {sessionMessage('操作失敗：'+e.message,true);alert('操作失敗：'+e.message);}
+    finally {button.disabled=false;}
+  }
   document.addEventListener('DOMContentLoaded',async()=>{
+    $('refreshSessions').addEventListener('click',refreshSessions);
+    $('revokeOtherSessions').addEventListener('click',revokeOthers);
     $('passwordForm').addEventListener('submit',changePassword);
     $('bindLine').addEventListener('click',bindLine);
     $('unbindLine').addEventListener('click',unbindLine);
-    try {if(window.CNAuthGuardReady) await window.CNAuthGuardReady;await refresh();show('');}
+    try {if(window.CNAuthGuardReady) await window.CNAuthGuardReady;await refresh();show('');await refreshSessions();}
     catch(e){show('載入失敗：'+e.message,true);return;}
     if(sessionStorage.getItem('cn_security_line_bind')==='1') {
       sessionStorage.removeItem('cn_security_line_bind');

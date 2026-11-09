@@ -27,13 +27,10 @@ window.CNAuthGuardReady = (() => {
   const source = document.currentScript && document.currentScript.src;
   const url = new URL('./auth-guard.js', source || location.href);
   return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = url.href;
-    script.onload = () => window.CNAuthGuard
+    import(url.href).then(() => window.CNAuthGuard
       ? resolve(window.CNAuthGuard)
-      : reject(new Error('AUTH_GUARD_NOT_INITIALIZED'));
-    script.onerror = () => reject(new Error('AUTH_GUARD_LOAD_FAILED'));
-    document.head.appendChild(script);
+      : reject(new Error('AUTH_GUARD_NOT_INITIALIZED')))
+      .catch(reject);
   });
 })();
 

@@ -54,7 +54,7 @@
       await request('/api/auth/line/bind', {password,id_token}, temporaryToken);
       // Keep the verified member session; never persist the password.
       localStorage.setItem(TOKEN_KEY,temporaryToken);
-      localStorage.removeItem('member_manual_logout');
+      localStorage.removeItem(CONFIG.MANUAL_LOGOUT_KEY);
       $('password').value = '';
       location.replace('./index.html');
     } catch (e) {

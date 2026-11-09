@@ -1,53 +1,3 @@
-/** CN Member Hierarchy — Cloudflare Workers + D1 */
-'use strict';
-const TOKEN_KEY = 'member_session_token';
-const API_BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-const $ = id => document.getElementById(id);
-let sessionToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
-
-async function api(action, extra = {}) {
-  await window.CNAuthGuardReady;
-  const routes = {
-    me: '/api/auth/me',
-    member_self: '/api/members/me',
-    member_downline: '/api/members/downline?recursive=true'
-  };
-  const path = routes[action];
-  if (!path) throw new Error('未支援的 API：' + action);
-  const token = extra.token || sessionToken;
-  if (!token) return { success: false, error: 'UNAUTHORIZED' };
-  const response = await fetch(API_BASE + path, {
-    method: 'GET',
-    headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
-    cache: 'no-store'
-  });
-  let data;
-  try { data = await response.json(); }
-  catch { throw new Error('API 回應非 JSON (HTTP ' + response.status + ')'); }
-  if (!response.ok && !data.error) data.error = 'HTTP_' + response.status;
-  return data;
-}
-
-async function verifySession() {
-  if (!sessionToken) {
-    location.replace('./index.html');
-    return false;
-  }
-  const result = await api('me');
-  if (!result.success) {
-    if (['UNAUTHORIZED', 'SESSION_EXPIRED', 'INVALID_SESSION'].includes(result.error)) {
-      sessionToken = '';
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
-      location.replace('./index.html');
-    } else {
-      $('hierarchyMessage').textContent = 'Session 驗證失敗：' + (result.error || '未知錯誤');
-    }
-    return false;
-  }
-  return true;
-}
-
 
 /*
  * Stage 8 - Member Hierarchy
@@ -65,7 +15,7 @@ async function verifySession() {
 (() => {
   'use strict';
 
-  // Shared $ helper declared above.
+  const $ = id => document.getElementById(id);
 
   const state = {
     members: [],
@@ -144,11 +94,11 @@ async function verifySession() {
     $('hierarchyRows').innerHTML =
       items.map(m => `
         <tr>
-          <td data-label="姓名">${esc(m.name)}</td>
-          <td data-label="會員 ID"><code>${esc(m.member_id)}</code></td>
-          <td data-label="直屬上線">${esc(m.parent_member_id)}</td>
-          <td data-label="層級">${esc(m.depth)}</td>
-          <td data-label="狀態">${esc(m.status)}</td>
+          <td>${esc(m.name)}</td>
+          <td><code>${esc(m.member_id)}</code></td>
+          <td>${esc(m.parent_member_id)}</td>
+          <td>${esc(m.depth)}</td>
+          <td>${esc(m.status)}</td>
         </tr>
       `).join('') ||
       '<tr><td colspan="5">沒有符合條件的會員</td></tr>';
@@ -282,7 +232,7 @@ async function verifySession() {
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Downline received:', result.success);
+      console.log('[HIERARCHY] Downline response:', result);
 
       if (!result.success) {
         throw new Error(
@@ -298,7 +248,7 @@ async function verifySession() {
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Self received:', own.success);
+      console.log('[HIERARCHY] Self response:', own);
 
       if (!own.success || !own.member) {
         throw new Error(
@@ -447,15 +397,3 @@ async function verifySession() {
     init();
   }
 })();
-
-
-// Session check before loading protected member data.
-document.addEventListener('DOMContentLoaded', async () => {
-  $('backToMember').addEventListener('click', () => { location.href = './index.html'; });
-  try {
-    if (await verifySession()) await window.Stage8Hierarchy.load();
-  } catch (error) {
-    console.error('[HIERARCHY] Session check failed:', error);
-    $('hierarchyMessage').textContent = '無法驗證登入狀態：' + (error.message || String(error));
-  }
-});

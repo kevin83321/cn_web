@@ -1,10 +1,9 @@
 'use strict';
-/* Loaded by app-shell.js on protected pages. */
+/* Load before page scripts on protected pages (not index.html/login/register). */
 (() => {
   const KEY = 'member_session_token';
   const MANUAL_KEY = 'member_manual_logout';
   const BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-  if (window.CNAuthGuard) return;
   const originalFetch = window.fetch.bind(window);
   let navigating = false;
   const home = reason => {
@@ -15,7 +14,7 @@
   function redirect(reason) {
     if (navigating) return;
     navigating = true;
-    if (reason !== 'FORBIDDEN' && reason !== 'PASSWORD_CHANGE_REQUIRED') {
+    if (reason !== 'FORBIDDEN') {
       localStorage.removeItem(KEY);
       sessionStorage.removeItem(KEY);
       // Prevent automatic LINE sign-in immediately after a revoked session.
@@ -37,7 +36,6 @@
       const body = await res.clone().json().catch(() => ({}));
       if (body.error === 'MEMBER_INACTIVE') redirect('MEMBER_INACTIVE');
       else if (body.error === 'FORBIDDEN') redirect('FORBIDDEN');
-      else if (body.error === 'PASSWORD_CHANGE_REQUIRED') redirect('PASSWORD_CHANGE_REQUIRED');
     }
     return res;
   };
@@ -53,8 +51,7 @@
         const body = await res.json().catch(() => ({}));
         if (body.error === 'MEMBER_INACTIVE') redirect('MEMBER_INACTIVE');
       }
-      else if (res.ok) { const body=await res.json().catch(()=>({})); if(body.password_change_required) redirect('PASSWORD_CHANGE_REQUIRED'); }
     }).catch(() => { /* Network errors must not log users out. */ });
   }
-  window.CNAuthGuard = { redirect, isRedirecting: () => navigating };
+  window.CNAuthGuard = { redirect };
 })();

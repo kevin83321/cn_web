@@ -1,8 +1,10 @@
-(() => {
-  'use strict';
 
-  const BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-  const token = () => localStorage.getItem('member_session_token') || sessionStorage.getItem('member_session_token') || '';
+'use strict';
+import { CONFIG } from './config.js';
+
+(() => {
+
+  const token = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   const msg = document.getElementById('emailStatus');
   const form = document.getElementById('emailForm');
   if (!msg || !form) return;
@@ -32,7 +34,7 @@
   }
 
   async function api(path, options = {}) {
-    const res = await fetch(BASE + path, {
+    const res = await fetch(CONFIG.API_BASE + path, {
       ...options,
       headers: {
         Authorization: 'Bearer ' + token(),

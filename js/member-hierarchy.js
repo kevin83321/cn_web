@@ -1,9 +1,9 @@
 /** CN Member Hierarchy — Cloudflare Workers + D1 */
 'use strict';
-const TOKEN_KEY = 'member_session_token';
-const API_BASE = 'https://cn-web-backend.kevin83321.workers.dev';
+import { CONFIG } from './config.js';
+
 const $ = id => document.getElementById(id);
-let sessionToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
+let sessionToken = localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
 
 async function api(action, extra = {}) {
   await window.CNAuthGuardReady;
@@ -16,7 +16,7 @@ async function api(action, extra = {}) {
   if (!path) throw new Error('未支援的 API：' + action);
   const token = extra.token || sessionToken;
   if (!token) return { success: false, error: 'UNAUTHORIZED' };
-  const response = await fetch(API_BASE + path, {
+  const response = await fetch(CONFIG.API_BASE + path, {
     method: 'GET',
     headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
     cache: 'no-store'
@@ -37,8 +37,8 @@ async function verifySession() {
   if (!result.success) {
     if (['UNAUTHORIZED', 'SESSION_EXPIRED', 'INVALID_SESSION'].includes(result.error)) {
       sessionToken = '';
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(CONFIG.TOKEN_KEY);
+      sessionStorage.removeItem(CONFIG.TOKEN_KEY);
       location.replace('./index.html');
     } else {
       $('hierarchyMessage').textContent = 'Session 驗證失敗：' + (result.error || '未知錯誤');

@@ -1,8 +1,8 @@
 'use strict';
+import { CONFIG } from './config.js';
+
 (() => {
-  const API_BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-  const LIFF_ID = '2012126330-D7gu42yk';
-  const TOKEN_KEY = 'member_session_token';
+  
   const $ = id => document.getElementById(id);
   let busy = false;
   let liffPromise;
@@ -14,7 +14,7 @@
   function message(text) { $('registerMessage').textContent = text; }
   async function initLine() {
     if (!window.liff) throw Error('LINE SDK 載入失敗');
-    if (!liffPromise) liffPromise = liff.init({liffId: LIFF_ID}).catch(e => {liffPromise = null; throw e;});
+    if (!liffPromise) liffPromise = liff.init({liffId: CONFIG.LIFF_ID}).catch(e => {liffPromise = null; throw e;});
     await liffPromise;
     if (!liff.isLoggedIn()) {
       liff.login({redirectUri: location.origin + location.pathname + location.search});
@@ -24,7 +24,7 @@
     return true;
   }
   async function request(path, body, token = '') {
-    const response = await fetch(API_BASE + path, {
+    const response = await fetch(CONFIG.API_BASE + path, {
       method: 'POST',
       headers: {'Content-Type':'application/json', ...(token ? {Authorization:'Bearer '+token} : {})},
       body: JSON.stringify(body)
@@ -53,8 +53,8 @@
       message('正在綁定 LINE…');
       await request('/api/auth/line/bind', {password,id_token}, temporaryToken);
       // Keep the verified member session; never persist the password.
-      localStorage.setItem(TOKEN_KEY,temporaryToken);
-      localStorage.removeItem('member_manual_logout');
+      localStorage.setItem(CONFIG.TOKEN_KEY,temporaryToken);
+      localStorage.removeItem(CONFIG.MANUAL_LOGOUT_KEY);
       $('password').value = '';
       location.replace('./index.html');
     } catch (e) {

@@ -1,0 +1,14 @@
+/* CN Portal UI polish — append to existing index.css */
+:root { --cn-radius: 18px; --cn-border: #e5eaf3; --cn-focus: #2563eb; }
+.feature-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.feature-card { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:18px; border:1px solid var(--cn-border); border-radius:var(--cn-radius); background:#fff; text-align:left; box-shadow:0 3px 12px rgba(28,54,100,.045); transition:transform .15s,box-shadow .15s,border-color .15s; }
+.feature-card strong { font-size:1rem; line-height:1.4; }
+.feature-card small { color:#64748b; line-height:1.45; }
+.feature-card:hover { transform:translateY(-2px); border-color:#b7c9eb; box-shadow:0 8px 24px rgba(28,54,100,.10); }
+.feature-card:focus-visible, .cn-security-link:focus-visible { outline:3px solid var(--cn-focus); outline-offset:3px; }
+.feature-icon { display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:#edf4ff; color:#2855a5; font-size:1.3rem; }
+.cn-security-link { display:flex; align-items:center; justify-content:space-between; margin:16px 0; padding:17px 18px; border:1px solid #dce7fa; border-radius:16px; background:#f4f8ff; color:#214ec9; text-decoration:none; font-weight:700; }
+.cn-security-link:hover { background:#eaf2ff; }
+@media (min-width:720px) { .feature-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } }
+@media (max-width:360px) { .feature-grid { grid-template-columns:1fr; } }
+@media (prefers-reduced-motion:reduce) { .feature-card { transition:none; } }

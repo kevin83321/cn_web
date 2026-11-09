@@ -1,17 +1,18 @@
 /* Phase 8.3 - self-service account security */
 'use strict';
+import { CONFIG } from './config.js';
+
 (() => {
-  const BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-  const LIFF_ID = '2012126330-D7gu42yk';
+  
   const $ = id => document.getElementById(id);
-  const token = () => localStorage.getItem('member_session_token') || sessionStorage.getItem('member_session_token') || '';
+  const token = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   const show = (message, error=false) => { $('message').textContent=message; $('message').style.color=error?'#b42318':'#3156ac'; };
   const notify = (message, error=false) => { show(message, error); window.alert(message); };
   let status = null;
   async function api(path, options={}) {
     const t=token();
     if(!t) { location.replace('./index.html'); throw Error('UNAUTHORIZED'); }
-    const response=await fetch(BASE+path, {method:options.method||'GET',cache:'no-store',headers:{Authorization:'Bearer '+t,...(options.body?{'Content-Type':'application/json'}:{})},...(options.body?{body:JSON.stringify(options.body)}:{})});
+    const response=await fetch(CONFIG.API_BASE+path, {method:options.method||'GET',cache:'no-store',headers:{Authorization:'Bearer '+t,...(options.body?{'Content-Type':'application/json'}:{})},...(options.body?{body:JSON.stringify(options.body)}:{})});
     const data=await response.json();
     if(!response.ok || !data.success) throw Error(data.error || 'REQUEST_FAILED');
     return data;
@@ -27,7 +28,7 @@
   }
   async function lineIdToken() {
     if(typeof liff==='undefined') throw Error('LINE_SDK_UNAVAILABLE');
-    await liff.init({liffId:LIFF_ID});
+    await liff.init({liffId:CONFIG.LIFF_ID});
     if(!liff.isLoggedIn()) {
       sessionStorage.setItem('cn_security_line_bind','1');
       liff.login({redirectUri:location.href});

@@ -1,11 +1,11 @@
 'use strict';
+import { CONFIG } from './config.js';
 (()=>{
-  const API='https://cn-web-backend.kevin83321.workers.dev';
   const $=id=>document.getElementById(id);
   const invite=new URLSearchParams(location.search).get('invite')||'';
   const msg=(text)=>{$('inviteMessage').textContent=text;};
   async function call(path,options={}){
-    const r=await fetch(API+path,{...options,cache:'no-store'});
+    const r=await fetch(CONFIG.API_BASE+path,{...options,cache:'no-store'});
     const data=await r.json();
     if(!r.ok||!data.success)throw Error(data.error||`HTTP_${r.status}`);
     return data;

@@ -1,9 +1,10 @@
 'use strict';
+import { CONFIG } from './config.js';
+
 (() => {
-  const API_BASE = 'https://cn-web-backend.kevin83321.workers.dev';
-  const TOKEN_KEY = 'member_session_token';
+  
   const $ = id => document.getElementById(id);
-  const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
+  const token = localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   const state = { customers: [], actor: null, busy: false };
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
@@ -26,7 +27,7 @@
 
   async function request(path, method = 'GET', body = undefined) {
     await window.CNAuthGuardReady;
-    const response = await fetch(API_BASE + path, {
+    const response = await fetch(CONFIG.API_BASE + path, {
       method,
       cache: 'no-store',
       headers: {

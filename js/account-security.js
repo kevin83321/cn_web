@@ -70,25 +70,6 @@
     catch(e){notify('密碼修改失敗：'+e.message,true);}
     finally{button.disabled=false;}
   }
-  // 僅用於友善顯示；User-Agent 不應作為安全裝置識別依據。
-  function deviceLabel(userAgent) {
-    const ua = String(userAgent || '').trim();
-    if (!ua) return '未知裝置';
-    const isLine = /(?:^|\s)Line\/[\d.]+/i.test(ua) || /\bLIFF\b/i.test(ua);
-    const os = /iPhone/i.test(ua) ? 'iPhone'
-      : /iPad/i.test(ua) ? 'iPad'
-      : /Android/i.test(ua) ? 'Android'
-      : /Windows NT/i.test(ua) ? 'Windows'
-      : /Macintosh|Mac OS X/i.test(ua) ? 'macOS'
-      : /Linux/i.test(ua) ? 'Linux' : '未知裝置';
-    const browser = isLine ? 'LINE LIFF'
-      : /Edg\//i.test(ua) ? 'Edge'
-      : /OPR\/|Opera/i.test(ua) ? 'Opera'
-      : /CriOS\/|Chrome\//i.test(ua) ? 'Chrome'
-      : /FxiOS\/|Firefox\//i.test(ua) ? 'Firefox'
-      : /Safari\//i.test(ua) ? 'Safari' : '';
-    return browser ? `${os} · ${browser}` : os;
-  }
   const formatDate = value => { const d = new Date(value); return Number.isNaN(d.getTime()) ? '未知' : d.toLocaleString('zh-TW'); };
   const sessionMessage = (message, error=false) => { $('sessionsMessage').textContent=message; $('sessionsMessage').style.color=error?'#b42318':'#3156ac'; };
   async function refreshSessions() {
@@ -103,8 +84,7 @@
       for(const session of sessions) {
         const card=document.createElement('article');card.className='session-card'+(session.is_current?' current':'');
         const title=document.createElement('div');title.className='session-title';
-        title.textContent=(session.is_current?'目前使用的裝置 · ':'')+deviceLabel(session.user_agent);
-        if (session.user_agent) title.title=session.user_agent;
+        title.textContent=(session.is_current?'目前使用的裝置 · ':'')+(session.user_agent||'未知裝置');
         const meta=document.createElement('div');meta.className='session-meta';
         meta.textContent=`登入：${formatDate(session.created_at)} ｜ 最後活動：${formatDate(session.last_seen_at)} ｜ 到期：${formatDate(session.expires_at)}`;
         card.append(title,meta);
@@ -147,8 +127,7 @@
         const card=document.createElement('article');card.className='security-event';
         const title=document.createElement('strong');title.textContent=eventLabels[item.type]||'帳號安全事件';
         const detail=document.createElement('div');detail.className='session-meta';
-        detail.textContent=formatDate(item.at)+(item.device?' ｜ '+deviceLabel(item.device):'');
-        if (item.device) detail.title=item.device;
+        detail.textContent=formatDate(item.at)+(item.device?' ｜ '+item.device:'');
         card.append(title,detail);list.append(card);
       }
     } catch(e) { message.textContent='載入失敗：'+e.message; }

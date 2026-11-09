@@ -78,7 +78,7 @@
           <h1 id="memberName">會員</h1>
           <div class="badge" id="memberRole">會員</div>
         </div>
-        <div class="greeting-mark">✦</div>
+        <button id="profileButton" class="greeting-mark" type="button" aria-label="個人資料">◉</button>
       </div>
 
       <div class="member-card">
@@ -96,10 +96,23 @@
         </div>
 
         <div id="featureGrid" class="feature-grid"></div>
+      </section>
 
-      <button id="logoutButton" class="logout-button">
-        登出會員帳號
-      </button>
+      <section id="adminSection" class="feature-section" hidden>
+        <div class="section-title"><h2>管理功能</h2></div>
+        <div id="adminGrid" class="feature-grid"></div>
+      </section>
+    </section>
+
+    <section id="accountView" hidden>
+      <div class="section-title"><h2>個人資料與帳號設定</h2></div>
+      <div class="setting-card">
+        <p class="card-label">會員姓名</p>
+        <strong id="accountName">會員</strong>
+        <p class="card-label">會員編號</p>
+        <strong id="accountId">—</strong>
+      </div>
+      <button id="logoutButton" class="logout-button" type="button">登出會員帳號</button>
     </section>
   </main>
 

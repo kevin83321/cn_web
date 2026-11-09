@@ -151,3 +151,5 @@ function redactSecrets(value) {
 }
 
 if(sessionToken)run(restore);else showLoggedOut();
+}
+)

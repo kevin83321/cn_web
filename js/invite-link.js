@@ -1,338 +1,97 @@
-
 'use strict';
 import { CONFIG } from './config.js';
 
 (() => {
-
   const $ = id => document.getElementById(id);
+  const getToken = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
+  let inviteUrl = '';
+  let inviteType = 'member';
+  const params = new URLSearchParams(location.search);
+  const initialCustomer = params.get('customer_member_id') || params.get('customer_id') || '';
 
-  const createButton = $('createInviteButton');
-  const output = $('inviteLinkOutput');
-  const resultSection = $('inviteResult');
-  const urlText = $('inviteUrlText');
-  const shareMessage = $('inviteShareMessage');
-
-  const copyButton = $('copyInviteButton');
-  const lineButton = $('lineShareButton');
-  const nativeButton = $('nativeShareButton');
-  const copyTextButton = $('copyInviteTextButton');
-
-  if (
-    !createButton ||
-    !output ||
-    !resultSection ||
-    !urlText ||
-    !shareMessage
-  ) {
-    return;
+  function setType(type) {
+    inviteType = type;
+    $('claimFields').hidden = type !== 'claim';
+    $('inviteResult').hidden = true;
+    $('inviteLinkOutput').textContent = '';
+    inviteUrl = '';
+  }
+  for (const radio of document.querySelectorAll('input[name="inviteType"]')) {
+    radio.addEventListener('change', () => { if (radio.checked) setType(radio.value); });
+  }
+  if (initialCustomer) {
+    $('customerId').value = initialCustomer;
+    document.querySelector('input[name="inviteType"][value="claim"]').checked = true;
+    setType('claim');
   }
 
-  let currentInviteUrl = '';
-
-  // ============================================================
-  // Helpers
-  // ============================================================
-
-  function getSessionToken() {
-    return (
-      localStorage.getItem(CONFIG.TOKEN_KEY) ||
-      sessionStorage.getItem(CONFIG.TOKEN_KEY) ||
-      ''
-    );
+  async function api(path, body) {
+    const token = getToken();
+    if (!token) throw Error('請先登入會員帳號');
+    const res = await fetch(CONFIG.API_BASE + path, {
+      method: 'POST', cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}`, ...(body ? {'Content-Type':'application/json'} : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw Error(data.error || `HTTP_${res.status}`);
+    return data;
   }
 
-  function showMessage(message, type = '') {
-    shareMessage.textContent = message;
-    shareMessage.className =
-      'message' + (type ? ' ' + type : '');
-  }
-
-  function getInviteMessage(url) {
-    return [
-      '邀請你加入 CN 會員中心！',
-      '',
-      '請透過以下專屬連結完成註冊：',
-      url,
-      '',
-      '邀請連結有效期限為 7 天，僅能使用一次。'
-    ].join('\n');
-  }
-
-  async function copyText(text) {
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return;
-      } catch {
-        // Fall back to legacy copy.
-      }
-    }
-
-    const textarea = document.createElement('textarea');
-
-    textarea.value = text;
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-
-    document.body.appendChild(textarea);
-    textarea.select();
-
-    try {
-      if (!document.execCommand('copy')) {
-        throw new Error('COPY_FAILED');
-      }
-    } finally {
-      textarea.remove();
-    }
-  }
-
-  function validateInviteUrl(value) {
-    if (typeof value !== 'string' || !value) {
-      throw new Error('API 未回傳邀請連結');
-    }
-
+  function checkedUrl(value) {
     const url = new URL(value);
-
-    if (
-      url.protocol !== 'https:' ||
-      url.origin !== location.origin
-    ) {
-      throw new Error('邀請連結來源不正確');
-    }
-
+    if (url.protocol !== 'https:' || url.origin !== location.origin) throw Error('邀請連結來源與目前網站不一致');
     return url.href;
   }
+  function message() {
+    return inviteType === 'claim'
+      ? `邀請你認領 CN 既有客戶帳號。\n請透過以下連結設定 Email 與密碼並完成驗證：\n${inviteUrl}`
+      : `邀請你加入 CN 會員中心！\n請透過以下連結完成註冊：\n${inviteUrl}`;
+  }
+  async function copy(value) {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(value);
+    const input = document.createElement('textarea');
+    input.value = value; document.body.append(input); input.select();
+    try { if (!document.execCommand('copy')) throw Error('COPY_FAILED'); } finally { input.remove(); }
+  }
 
-  // ============================================================
-  // Create Invitation
-  // ============================================================
-
-  async function createInvitation() {
-    if (createButton.disabled) {
-      return;
-    }
-
-    createButton.disabled = true;
-    createButton.textContent = '產生中…';
-
-    output.textContent = '正在產生邀請連結…';
-    output.className = 'message';
-
-    resultSection.hidden = true;
-    currentInviteUrl = '';
-
+  $('createInviteButton').addEventListener('click', async () => {
+    const btn = $('createInviteButton');
+    if (btn.disabled) return;
+    btn.disabled = true; inviteUrl = ''; $('inviteResult').hidden = true;
+    $('inviteLinkOutput').textContent = '正在產生連結…';
     try {
-      const token = getSessionToken();
-
-      if (!token) {
-        throw new Error('請先登入會員帳號');
-      }
-
-      const response = await fetch(
-        CONFIG.API_BASE + '/api/auth/invitations',
-        {
-          method: 'POST',
-          cache: 'no-store',
-          headers: {
-            Authorization: 'Bearer ' + token
-          }
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.error || '產生邀請連結失敗'
-        );
-      }
-
-      const inviteUrl = validateInviteUrl(data.url);
-
-      currentInviteUrl = inviteUrl;
-
-      urlText.textContent = inviteUrl;
-      resultSection.hidden = false;
-
-      createButton.textContent = '產生另一組邀請連結';
-
-      // Automatic copy is best-effort.
-      try {
-        await copyText(inviteUrl);
-
-        output.textContent = '邀請連結已產生並複製';
-        output.className = 'message success';
-      } catch {
-        output.textContent =
-          '邀請連結已產生，請點擊下方按鈕複製';
-
-        output.className = 'message success';
-      }
-
-      showMessage('');
-
+      const id = $('customerId').value.trim();
+      if (inviteType === 'claim' && !id) throw Error('請輸入客戶會員 ID');
+      const data = inviteType === 'claim'
+        ? await api('/api/auth/customer-claims', { customer_member_id: id })
+        : await api('/api/auth/invitations');
+      inviteUrl = checkedUrl(data.url);
+      $('inviteUrlText').textContent = inviteUrl;
+      $('inviteResult').hidden = false;
+      $('inviteLinkOutput').textContent = '邀請連結已產生。';
+      $('inviteShareMessage').textContent = '';
     } catch (error) {
-      output.textContent =
-        '無法產生邀請連結：' + error.message;
-
-      output.className = 'message error';
-
-      createButton.textContent = '重新產生邀請連結';
-
-    } finally {
-      createButton.disabled = false;
-    }
-  }
-
-  // ============================================================
-  // Copy Invitation URL
-  // ============================================================
-
-  async function copyInviteUrl() {
-    if (!currentInviteUrl) {
-      return;
-    }
-
+      const labels = { CLAIM_ALREADY_PENDING:'此客戶已有尚未到期的認領邀請', CLAIM_UNAVAILABLE:'此客戶不符合認領條件或已建立登入帳號', OUTSIDE_MANAGEMENT_SCOPE:'此客戶不在你的管理範圍', FORBIDDEN:'目前帳號沒有建立邀請的權限', SITE_NOT_CONFIGURED:'網站網址尚未設定' };
+      $('inviteLinkOutput').textContent = '產生失敗：' + (labels[error.message] || error.message);
+    } finally { btn.disabled = false; }
+  });
+  $('copyInviteButton').addEventListener('click', async () => {
+    try { await copy(inviteUrl); $('inviteShareMessage').textContent = '連結已複製'; }
+    catch { $('inviteShareMessage').textContent = '複製失敗，請手動複製'; }
+  });
+  $('copyInviteTextButton').addEventListener('click', async () => {
+    try { await copy(message()); $('inviteShareMessage').textContent = '邀請文字已複製'; }
+    catch { $('inviteShareMessage').textContent = '複製失敗'; }
+  });
+  $('lineShareButton').addEventListener('click', () => {
+    if (inviteUrl) location.href = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(inviteUrl);
+  });
+  $('nativeShareButton').addEventListener('click', async () => {
+    if (!inviteUrl) return;
     try {
-      await copyText(currentInviteUrl);
-      showMessage('連結已複製', 'success');
-    } catch {
-      showMessage(
-        '無法自動複製，請長按上方連結手動複製',
-        'error'
-      );
-    }
-  }
-
-  // ============================================================
-  // Copy Invitation Message
-  // ============================================================
-
-  async function copyInviteMessage() {
-    if (!currentInviteUrl) {
-      return;
-    }
-
-    try {
-      await copyText(
-        getInviteMessage(currentInviteUrl)
-      );
-
-      showMessage(
-        '完整邀請文字已複製',
-        'success'
-      );
-    } catch {
-      showMessage(
-        '無法複製邀請文字',
-        'error'
-      );
-    }
-  }
-
-  // ============================================================
-  // LINE Share
-  // ============================================================
-
-  function shareToLine() {
-    if (!currentInviteUrl) {
-      return;
-    }
-
-    const shareUrl =
-      'https://social-plugins.line.me/lineit/share?url=' +
-      encodeURIComponent(currentInviteUrl);
-
-    const opened = window.open(
-      shareUrl,
-      '_blank',
-      'noopener,noreferrer'
-    );
-
-    if (!opened) {
-      // Some embedded browsers may block new windows.
-      location.href = shareUrl;
-    }
-  }
-
-  // ============================================================
-  // Native Share
-  // ============================================================
-
-  async function shareNative() {
-    if (!currentInviteUrl) {
-      return;
-    }
-
-    if (!navigator.share) {
-      try {
-        await copyText(
-          getInviteMessage(currentInviteUrl)
-        );
-
-        showMessage(
-          '此裝置不支援分享面板，已複製邀請文字',
-          'success'
-        );
-      } catch {
-        showMessage(
-          '此裝置不支援分享面板，請使用複製連結',
-          'error'
-        );
-      }
-
-      return;
-    }
-
-    try {
-      await navigator.share({
-        title: 'CN 會員邀請',
-        text: '邀請你加入 CN 會員中心！',
-        url: currentInviteUrl
-      });
-
-      showMessage('已完成分享操作', 'success');
-
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        return;
-      }
-
-      showMessage(
-        '無法開啟分享面板，請使用複製連結',
-        'error'
-      );
-    }
-  }
-
-  // ============================================================
-  // Event Listeners
-  // ============================================================
-
-  createButton.addEventListener(
-    'click',
-    createInvitation
-  );
-
-  copyButton?.addEventListener(
-    'click',
-    copyInviteUrl
-  );
-
-  copyTextButton?.addEventListener(
-    'click',
-    copyInviteMessage
-  );
-
-  lineButton?.addEventListener(
-    'click',
-    shareToLine
-  );
-
-  nativeButton?.addEventListener(
-    'click',
-    shareNative
-  );
-
+      if (navigator.share) await navigator.share({ title:'CN 邀請', text:message(), url:inviteUrl });
+      else { await copy(message()); $('inviteShareMessage').textContent = '裝置不支援分享，已複製邀請文字'; }
+    } catch (error) { if (error.name !== 'AbortError') $('inviteShareMessage').textContent = '分享失敗'; }
+  });
 })();

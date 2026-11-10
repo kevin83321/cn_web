@@ -31,6 +31,22 @@ import { $, api, getToken, errors } from './admin-common.js';
     return '其他權限';
   };
 
+  function selectTab(tab) {
+    const create = tab === 'create';
+    $('rolesPanel').hidden = create;
+    $('createPanel').hidden = !create;
+    $('tabRoles').setAttribute('aria-selected', String(!create));
+    $('tabCreate').setAttribute('aria-selected', String(create));
+  }
+
+  function showRoleList() {
+    state.detailRequest++;
+    state.selected = null;
+    $('editSection').hidden = true;
+    $('roleCatalog').hidden = false;
+    selectTab('roles');
+  }
+
   async function loadRoles() {
     if (state.loading) return;
     state.loading = true;
@@ -112,6 +128,8 @@ import { $, api, getToken, errors } from './admin-common.js';
   async function openRole(code) {
     const requestId = ++state.detailRequest;
     state.selected = null;
+    selectTab('roles');
+    $('roleCatalog').hidden = true;
     $('editSection').hidden = false;
     $('permissionOptions').replaceChildren();
     $('saveButton').hidden = true;
@@ -182,11 +200,9 @@ import { $, api, getToken, errors } from './admin-common.js';
   async function init() {
     if (!getToken()) { location.replace('./index.html'); return; }
     $('reloadRoles').addEventListener('click', loadRoles);
-    $('closeRole').addEventListener('click', () => {
-      state.detailRequest++;
-      state.selected = null;
-      $('editSection').hidden = true;
-    });
+    $('closeRole').addEventListener('click', showRoleList);
+    $('tabRoles').addEventListener('click', showRoleList);
+    $('tabCreate').addEventListener('click', () => selectTab('create'));
     $('createForm').addEventListener('submit', createRole);
     $('permissionForm').addEventListener('submit', savePermissions);
     try {
@@ -194,6 +210,7 @@ import { $, api, getToken, errors } from './admin-common.js';
       state.granted = Array.isArray(result.permissions) ? result.permissions : [];
       if (!has('admin.roles.catalog.read')) { notice('沒有角色目錄檢視權限'); $('reloadRoles').disabled = true; return; }
       $('createSection').hidden = !has('admin.roles.create');
+      $('tabCreate').hidden = !has('admin.roles.create');
       await loadRoles();
     } catch (e) {
       notice('權限確認失敗：' + errText(e));

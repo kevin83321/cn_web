@@ -7,8 +7,7 @@
   <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
   <title>會員階層管理</title>
   <link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
-  <link href="./css/member-hierarchy.css?v=20261110-941" rel="stylesheet"/>
-  <link href="./css/hierarchy-ui.css?v=20261110-941" rel="stylesheet"/>
+  <link href="./css/hierarchy-ui.css?v=20261110-942" rel="stylesheet"/>
   <link href="./css/app-shell.css?v=20261104-3" rel="stylesheet"/>
   <link rel="stylesheet" href="./css/cn-polish.css">
 </head>
@@ -21,34 +20,31 @@
       僅顯示目前登入會員的所有下線。
       資料由 Cloudflare Workers Session 權限決定。
     </p>
-<div class="hierarchy-tabs" role="tablist" aria-label="會員階層檢視">
-<button type="button" class="hierarchy-tab" id="hierarchyTabTree" role="tab" aria-controls="hierarchyTreePanel" aria-selected="true">組織階層</button>
-<button type="button" class="hierarchy-tab" id="hierarchyTabList" role="tab" aria-controls="hierarchyListPanel" aria-selected="false">會員查詢</button>
+<div class="hierarchy-search-bar">
+<label for="hierarchySearch">搜尋下線會員</label>
+<input id="hierarchySearch" type="search" placeholder="搜尋姓名、會員 ID、直屬上線" autocomplete="off"/>
 </div>
-<div class="actions">
-<button id="hierarchyReload" type="button">
-        載入／更新下線資料
-      </button>
-<button class="muted" id="hierarchyExpand" type="button">
-        全部展開
-      </button>
-<button class="muted" id="hierarchyCollapse" type="button">
-        全部收合
-      </button>
+<div class="hierarchy-toolbar">
+<div class="hierarchy-tabs" role="tablist" aria-label="檢視方式">
+<button type="button" class="hierarchy-tab" id="hierarchyTabTree" role="tab" aria-controls="hierarchyTreePanel" aria-selected="true">階層圖</button>
+<button type="button" class="hierarchy-tab" id="hierarchyTabList" role="tab" aria-controls="hierarchyListPanel" aria-selected="false">列表</button>
+</div>
+<button id="hierarchyReset" type="button" class="hierarchy-reset">清除篩選</button>
+</div>
+<div class="actions hierarchy-actions">
+<button id="hierarchyReload" type="button">重新載入</button>
+<button class="muted" id="hierarchyExpand" type="button">全部展開</button>
+<button class="muted" id="hierarchyCollapse" type="button">全部收合</button>
 </div>
 <p id="hierarchyMessage" role="status">
       請點擊「載入／更新下線資料」
     </p>
 <div id="hierarchyTreePanel" role="tabpanel" aria-labelledby="hierarchyTabTree">
-<h2>會員階層樹</h2>
+<h2>我的會員組織</h2><p id="hierarchyTreeCount" class="hierarchy-view-count"></p>
 <div class="hierarchy-tree" id="hierarchyTree"></div>
 </div>
 <div id="hierarchyListPanel" role="tabpanel" aria-labelledby="hierarchyTabList" hidden>
 <h2>下線會員列表</h2>
-<label for="hierarchySearch">
-      搜尋姓名、會員 ID、直屬上線
-    </label>
-<input id="hierarchySearch" placeholder="輸入關鍵字" type="search"/>
 <div class="grid">
 <div>
 <label for="hierarchyDepth">層級</label>
@@ -87,6 +83,6 @@
 </section>
 </section>
 </main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div>
-<script type="module" src="./js/member-hierarchy.js?v=20261110-94"></script>
+<script type="module" src="./js/member-hierarchy.js?v=20261110-942"></script>
 </body>
 </html>

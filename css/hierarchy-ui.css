@@ -30,3 +30,18 @@
   #hierarchyPanel .hierarchy-table td[colspan]::before{display:none}
   #hierarchyPanel .grid{grid-template-columns:1fr}
 }
+
+/* Phase 9.4.2: one search, two views. Never style the shared app header. */
+#hierarchyPanel .hierarchy-search-bar{margin:18px 0 10px}
+#hierarchyPanel .hierarchy-search-bar label{display:block;margin:0 0 7px;font-size:13px;color:#52647f}
+#hierarchyPanel .hierarchy-search-bar input{width:100%;min-width:0;font-size:16px}
+#hierarchyPanel .hierarchy-toolbar{display:flex;align-items:center;gap:10px;justify-content:space-between}
+#hierarchyPanel .hierarchy-toolbar .hierarchy-tabs{flex:1;margin:6px 0 12px}
+#hierarchyPanel .hierarchy-reset{flex:0 0 auto;background:#eaf0fb;color:#2859d7;padding:10px 12px;font-size:13px}
+#hierarchyPanel .hierarchy-actions{margin:8px 0 12px}
+#hierarchyPanel .hierarchy-actions button{font-size:13px;padding:10px 12px}
+#hierarchyPanel .hierarchy-node.is-search-hit{background:#e7f0ff;outline:2px solid #85a9f1}
+#hierarchyPanel .hierarchy-node.is-search-path{background:#f0f5ff}
+#hierarchyPanel .hierarchy-view-count{font-size:13px;color:#64748b;margin:0 0 12px}
+#hierarchyPanel .hierarchy-detail{scroll-margin-top:100px}
+@media(max-width:400px){#hierarchyPanel .hierarchy-toolbar{align-items:stretch;flex-direction:column;gap:0}#hierarchyPanel .hierarchy-toolbar .hierarchy-tabs{width:100%}#hierarchyPanel .hierarchy-reset{align-self:flex-end;margin-bottom:8px}}

@@ -72,7 +72,8 @@ async function verifySession() {
     root: null,
     expanded: new Set(),
     loaded: false,
-    loading: false
+    loading: false,
+    view: 'tree'
   };
 
   const esc = value =>
@@ -135,6 +136,30 @@ async function verifySession() {
     });
   }
 
+  function searchMatches() {
+    const q = $('hierarchySearch').value.trim().toLocaleLowerCase();
+    if (!q) return null;
+    return new Set(state.members.filter(m => [m.name, m.member_id, m.parent_member_id]
+      .some(v => String(v || '').toLocaleLowerCase().includes(q))).map(id));
+  }
+
+  function treeVisibility() {
+    const hits = searchMatches();
+    if (!hits) return { hits: null, visible: null };
+    const byId = new Map([state.root, ...state.members].filter(Boolean).map(m => [id(m), m]));
+    const visible = new Set([id(state.root)]);
+    for (const hit of hits) {
+      let key = hit;
+      const visited = new Set();
+      while (key && byId.has(key) && !visited.has(key)) {
+        visited.add(key);
+        visible.add(key);
+        key = parent(byId.get(key));
+      }
+    }
+    return { hits, visible };
+  }
+
   function showDetail(memberId) {
     const member = [state.root, ...state.members].find(m => m && id(m) === memberId);
     if (!member) return;
@@ -173,6 +198,7 @@ async function verifySession() {
 
   function renderTree() {
     const children = new Map();
+    const { hits, visible } = treeVisibility();
 
     for (const member of state.members) {
       const key = parent(member);
@@ -204,10 +230,10 @@ async function verifySession() {
       nextAncestors.add(key);
 
       const kids = sort([
-        ...(children.get(key) || [])
+        ...(children.get(key) || []).filter(m => !visible || visible.has(id(m)))
       ]);
 
-      const open = state.expanded.has(key);
+      const open = hits ? true : state.expanded.has(key);
 
       const toggle = kids.length
         ? `
@@ -224,7 +250,7 @@ async function verifySession() {
 
       return `
         <li>
-          <div class="hierarchy-node">
+          <div class="hierarchy-node ${hits && hits.has(key) ? 'is-search-hit' : visible && visible.has(key) ? 'is-search-path' : ''}">
             ${toggle}
 
             <button type="button" class="hierarchy-member-link" data-member-id="${esc(key)}">${esc(member.name || key)}</button>
@@ -251,6 +277,7 @@ async function verifySession() {
       name: '我的會員'
     };
 
+    $('hierarchyTreeCount').textContent = hits ? `搜尋符合 ${hits.size} 人（保留上線路徑）` : `共 ${state.members.length} 名下線`;
     $('hierarchyTree').innerHTML = `
       <ul class="hierarchy-root">
         ${node(root, 0)}
@@ -417,7 +444,7 @@ async function verifySession() {
     ].forEach(key => {
       $(key).addEventListener(
         key === 'hierarchySearch' ? 'input' : 'change',
-        renderTable
+        render
       );
     });
 
@@ -445,6 +472,12 @@ async function verifySession() {
       const button = event.target.closest('[data-member-id]');
       if (button) showDetail(button.dataset.memberId);
     });
+    $('hierarchyReset').addEventListener('click', () => {
+      $('hierarchySearch').value = '';
+      $('hierarchyDepth').value = '';
+      $('hierarchyStatus').value = '';
+      render();
+    });
     $('hierarchyDetailClose').addEventListener('click', () => {
       $('hierarchyDetail').hidden = true;
     });
@@ -457,9 +490,13 @@ async function verifySession() {
         const active = tabId === selected;
         $(tabId).setAttribute('aria-selected', String(active));
         $(panelId).hidden = !active;
+        state.view = selected === 'hierarchyTabTree' ? 'tree' : 'list';
       });
+      $('hierarchyExpand').hidden = state.view !== 'tree';
+      $('hierarchyCollapse').hidden = state.view !== 'tree';
     }
     tabs.forEach(([tabId]) => $(tabId).addEventListener('click', () => selectTab(tabId)));
+    selectTab('hierarchyTabTree');
     console.log('[HIERARCHY] Initialized');
   }
 

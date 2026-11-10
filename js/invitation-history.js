@@ -34,18 +34,35 @@ import { CONFIG } from './config.js';
   }
   function render() {
     const filter = $('historyFilter').value;
-    const list = filter === 'all' ? rows : rows.filter(row => row.status === filter);
+    const type = $('historyTypeFilter').value;
+    const list = rows.filter(row => (filter === 'all' || row.status === filter) && (type === 'all' || row.type === type));
+    const summary = $('historySummary');
+    summary.replaceChildren();
+    for (const [key, title] of [['all', '全部'], ['pending', '等待使用'], ['used', '已完成'], ['revoked', '已撤銷'], ['expired', '已過期']]) {
+      const count = rows.filter(row => (type === 'all' || row.type === type) && (key === 'all' || row.status === key)).length;
+      const pill = document.createElement('span');
+      pill.className = 'history-stat';
+      pill.textContent = `${title} ${count}`;
+      summary.append(pill);
+    }
     const tbody = $('historyRows');
     tbody.replaceChildren();
     for (const item of list) {
       const tr = document.createElement('tr');
-      tr.append(
-        cell(label[item.type] || item.type),
-        cell(item.type === 'claim' ? `${item.target_name || '未命名'} (${item.target_member_id || '—'})` : '新會員（尚未註冊）'),
-        cell(statusLabel[item.status] || item.status),
-        cell(date(item.created_at)),
-        cell(date(item.expires_at))
-      );
+      const values = [
+        label[item.type] || item.type,
+        item.type === 'claim' ? `${item.target_name || '未命名'} (${item.target_member_id || '—'})` : '新會員（尚未註冊）',
+        statusLabel[item.status] || item.status,
+        date(item.created_at),
+        date(item.expires_at)
+      ];
+      const headings = ['類型', '邀請對象', '狀態', '建立時間', '到期時間'];
+      values.forEach((value, index) => {
+        const td = cell(value);
+        td.dataset.label = headings[index];
+        if (index === 2) td.dataset.status = item.status;
+        tr.append(td);
+      });
       const action = document.createElement('td');
       if (item.status === 'pending') {
         const button = document.createElement('button');
@@ -55,6 +72,7 @@ import { CONFIG } from './config.js';
         button.addEventListener('click', () => revoke(item, button));
         action.append(button);
       } else action.textContent = '—';
+      action.dataset.label = '操作';
       tr.append(action);
       tbody.append(tr);
     }
@@ -63,6 +81,7 @@ import { CONFIG } from './config.js';
       const tr = document.createElement('tr');
       const td = cell('沒有符合條件的邀請紀錄');
       td.colSpan = 6;
+      td.className = 'history-empty';
       tr.append(td);
       tbody.append(tr);
     }
@@ -95,6 +114,7 @@ import { CONFIG } from './config.js';
   }
   $('reloadHistory').addEventListener('click', load);
   $('historyFilter').addEventListener('change', render);
+  $('historyTypeFilter').addEventListener('change', render);
   // Newly generated invitations should appear in history without another page load.
   document.addEventListener('cn:invitation-created', load);
   load();

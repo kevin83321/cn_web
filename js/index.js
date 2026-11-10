@@ -60,23 +60,7 @@ import { CONFIG } from './config.js';
       url: './invite-create.html',
       permission: null,
       requiredRole: 'distributor'
-    },
-    // {
-    //   id: 'profile',
-    //   title: '個人資料',
-    //   detail: '查看會員資訊',
-    //   icon: '◉',
-    //   tab: 'account',
-    //   permission: 'member.self.read'
-    // },
-    // {
-    //   id: 'account',
-    //   title: '帳號設定',
-    //   detail: '登入與安全',
-    //   icon: '⚙',
-    //   tab: 'account',
-    //   permission: null
-    // }
+    }
   ];
 
   const adminFeatures = [

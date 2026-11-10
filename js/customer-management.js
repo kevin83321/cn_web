@@ -16,7 +16,9 @@ import { CONFIG } from './config.js';
     CUSTOMER_NOT_ASSIGNED: '此客戶目前沒有有效服務關係',
     SERVICE_CONFLICT: '服務關係已被其他操作變更，請重新載入',
     PASSWORD_CHANGE_REQUIRED: '請先返回會員中心修改密碼',
-    RESULT_TOO_LARGE: '查詢結果過多，請聯絡管理員'
+    RESULT_TOO_LARGE: '查詢結果過多，請聯絡管理員',
+    POSSIBLE_DUPLICATE_CUSTOMER: 'Email 或電話已存在，請先查詢既有會員，避免重複建立',
+    CREATE_CONFLICT: '資料建立衝突，請重新確認', INVALID_FIELDS: '送出的欄位不正確'
   };
   const explain = error => messages[error?.message] || error?.message || '未知錯誤';
   const getToken = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
@@ -40,6 +42,8 @@ import { CONFIG } from './config.js';
   function setBusy(busy) {
     state.busy = busy;
     $('reload').disabled = busy;
+    $('createButton').disabled = busy || !state.writable;
+    for (const id of ['createName','createEmail','createPhone']) $(id).disabled = busy || !state.writable;
     $('operation').disabled = busy || !state.writable;
     $('customerId').disabled = busy || !state.writable;
     $('distributorId').disabled = busy || !state.writable;
@@ -145,6 +149,28 @@ import { CONFIG } from './config.js';
     }
   }
 
+  async function createCustomer(event) {
+    event.preventDefault();
+    if (!state.writable || state.busy) return;
+    const name = $('createName').value.trim();
+    const email = $('createEmail').value.trim();
+    const phone = $('createPhone').value.trim();
+    if (!name) { $('createMessage').textContent = '請輸入客戶姓名'; return; }
+    if (!window.confirm(`確定新增客戶「${name}」，並指派給自己？`)) return;
+    setBusy(true);
+    $('createMessage').textContent = '正在建立客戶…';
+    try {
+      const result = await request('/api/customers/create', 'POST', { name, email, phone });
+      $('createMessage').textContent = `建立成功！客戶 ID：${result.customer_member_id}（尚未啟用登入）`;
+      $('createForm').reset();
+      setBusy(false);
+      await load();
+    } catch (error) {
+      $('createMessage').textContent = '建立失敗：' + explain(error);
+      setBusy(false);
+    }
+  }
+
   async function init() {
     updateOperation();
     setBusy(true);
@@ -173,6 +199,7 @@ import { CONFIG } from './config.js';
 
   $('operation').addEventListener('change', updateOperation);
   $('manageForm').addEventListener('submit', submit);
+  $('createForm').addEventListener('submit', createCustomer);
   $('reload').addEventListener('click', load);
   $('search').addEventListener('input', render);
   $('rows').addEventListener('click', event => {

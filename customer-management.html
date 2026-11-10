@@ -13,6 +13,19 @@
 <body data-page="customers">
 <div class="app-shell"><header class="app-header" id="appHeader"></header><main class="wrap app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>服務客戶</h1><p>快速查詢、指派及管理服務關係</p></div>
 <p>服務客戶與會員上下線分開管理。指派、轉移及結束服務會更新 D1 資料。</p>
+<section class="card" aria-labelledby="createHeading">
+<h2 id="createHeading">新增客戶</h2>
+<p>由直銷商直接建立一般會員，並自動建立組織與服務關係。此操作不會啟用客戶登入。</p>
+<form id="createForm">
+<div class="form-grid">
+<label>客戶姓名 <input id="createName" maxlength="100" required autocomplete="name" placeholder="請輸入客戶姓名"></label>
+<label>Email（選填） <input id="createEmail" type="email" maxlength="254" autocomplete="email" placeholder="customer@example.com"></label>
+<label>電話（選填） <input id="createPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="09xxxxxxxx"></label>
+</div>
+<button id="createButton" type="submit" disabled>建立客戶並指派給我</button>
+<p id="createMessage" role="status"></p>
+</form>
+</section>
 <section aria-labelledby="manageHeading" class="card">
 <h2 id="manageHeading">服務關係管理</h2>
 <p id="permissionMessage" role="status">正在確認操作權限…</p>

@@ -7,14 +7,12 @@
 <title>客戶服務管理</title>
 <link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
 <link href="./css/customer-management.css" rel="stylesheet"/>
-<script type="module" src="./js/customer-management.js"></script>
+<script src="./js/customer-management.js" type="module"></script>
 <link href="./css/app-shell.css?v=20261104-3" rel="stylesheet"/>
-<link rel="stylesheet" href="./css/cn-polish.css">
-</head>
+<link href="./css/cn-polish.css" rel="stylesheet"/>
+<link href="./css/customer-tabs.css?v=20261110" rel="stylesheet"/><script defer="True" src="./js/customer-tabs.js?v=20261110"></script></head>
 <body data-page="customers">
-<div class="app-shell"><header class="app-header" id="appHeader"></header><main class="wrap app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>服務客戶</h1><p>快速查詢、指派及管理服務關係</p></div>
-<p>服務客戶與會員上下線分開管理。指派、轉移及結束服務會更新 D1 資料。</p>
-<section aria-labelledby="listHeading">
+<div class="app-shell"><header class="app-header" id="appHeader"></header><main class="wrap app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>服務客戶</h1><p>查詢服務客戶，或新增與管理服務關係</p></div><div aria-label="服務客戶功能" class="customer-tabs" role="tablist"><button aria-controls="panel-query" aria-selected="true" class="customer-tab" data-customer-tab="query" id="tab-query" role="tab" tabindex="0" type="button">客戶查詢</button><button aria-controls="panel-manage" aria-selected="false" class="customer-tab" data-customer-tab="manage" id="tab-manage" role="tab" tabindex="-1" type="button">客戶管理</button></div><div aria-labelledby="tab-query" class="customer-tab-panel" id="panel-query" role="tabpanel"><section aria-labelledby="listHeading">
 <h2 id="listHeading">目前服務客戶</h2>
 <div class="actions">
 <button id="reload" type="button">重新載入</button>
@@ -28,9 +26,17 @@
 <tbody id="rows"></tbody>
 </table>
 </div>
-</section>
-<section aria-labelledby="manageHeading" class="card">
-<h2 id="manageHeading">服務關係管理</h2>
+</section><section hidden="" id="historyPanel">
+<h2>服務關係歷史</h2>
+<p id="historyMessage" role="status"></p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>服務 ID</th><th>服務直銷商</th><th>狀態</th><th>建立時間</th></tr></thead>
+<tbody id="historyRows"></tbody>
+</table>
+</div>
+</section></div><div aria-labelledby="tab-manage" class="customer-tab-panel" hidden="" id="panel-manage" role="tabpanel"><section aria-labelledby="manageHeading" class="card">
+<h2 id="manageHeading">指派與轉移服務</h2>
 <p id="permissionMessage" role="status">正在確認操作權限…</p>
 <form id="manageForm">
 <div class="form-grid">
@@ -42,7 +48,7 @@
 </select>
 </label>
 <label>客戶會員 ID
-          <input id="customerId" required autocomplete="off" maxlength="100" placeholder="輸入會員 ID，或從上方查詢結果帶入">
+          <input autocomplete="off" id="customerId" maxlength="100" placeholder="輸入會員 ID，或從上方查詢結果帶入" required=""/>
 </label>
 <label id="distributorField">服務直銷商（姓名 / 會員 ID）
           <select id="distributorId"><option value="">請選擇服務直銷商</option></select>
@@ -54,30 +60,24 @@
 <button disabled="" id="submitAction" type="submit">確認指派</button>
 <p id="actionMessage" role="status"></p>
 </form>
-</section>
-<section class="card" aria-labelledby="createHeading">
+</section><section aria-labelledby="createHeading" class="card">
 <h2 id="createHeading">新增客戶</h2>
 <p>由直銷商直接建立一般會員，並自動建立組織與服務關係。此操作不會啟用客戶登入。</p>
 <form id="createForm">
 <div class="form-grid">
-<label>客戶姓名 <input id="createName" maxlength="100" required autocomplete="name" placeholder="請輸入客戶姓名"></label>
-<label>Email（選填） <input id="createEmail" type="email" maxlength="254" autocomplete="email" placeholder="customer@example.com"></label>
-<label>電話（選填） <input id="createPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="09xxxxxxxx"></label>
+<label>客戶姓名 <input autocomplete="name" id="createName" maxlength="100" placeholder="請輸入客戶姓名" required=""/></label>
+<label>Email（選填） <input autocomplete="email" id="createEmail" maxlength="254" placeholder="customer@example.com" type="email"/></label>
+<label>電話（選填） <input autocomplete="tel" id="createPhone" maxlength="30" placeholder="09xxxxxxxx" type="tel"/></label>
 </div>
-<button id="createButton" type="submit" disabled>建立客戶並指派給我</button>
+<button disabled="" id="createButton" type="submit">建立客戶並指派給我</button>
 <p id="createMessage" role="status"></p>
 </form>
-</section>
-<section hidden="" id="historyPanel">
-<h2>服務關係歷史</h2>
-<p id="historyMessage" role="status"></p>
-<div class="table-wrap">
-<table>
-<thead><tr><th>服務 ID</th><th>服務直銷商</th><th>狀態</th><th>建立時間</th></tr></thead>
-<tbody id="historyRows"></tbody>
-</table>
-</div>
-</section>
+</section></div>
+
+
+
+
+
 </main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div>
 </body>
 </html>

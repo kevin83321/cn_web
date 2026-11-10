@@ -2,6 +2,7 @@
 'use strict';
 
 (() => {
+  const $ = id => document.getElementById(id);
   const state = {
     page: 1,
     pageSize: 20,

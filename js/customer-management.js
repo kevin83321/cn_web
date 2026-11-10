@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { customers: [], actor: null, busy: false, writable: false, historyId: null };
+  const state = { customers: [], actor: null, busy: false, writable: false, historyId: null, options: { customers: [], distributors: [] } };
   const esc = value => String(value ?? '—').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const messages = {
@@ -50,6 +50,36 @@ import { CONFIG } from './config.js';
     $('submitAction').disabled = busy || !state.writable;
   }
 
+  const labelOf = (member) => `${member.name || '未命名'} (${member.member_id})`;
+  function fillSelect(id, items, placeholder) {
+    const select = $(id);
+    const selected = select.value;
+    select.replaceChildren(new Option(placeholder, ''));
+    for (const member of items) select.add(new Option(labelOf(member), member.member_id));
+    if (items.some(m => m.member_id === selected)) select.value = selected;
+  }
+  function updateCurrentService() {
+    const customer = state.options.customers.find(m => m.member_id === $('customerId').value);
+    $('currentService').textContent = customer?.current_distributor_id
+      ? `目前服務：${customer.current_distributor_name || '未命名'} (${customer.current_distributor_id})`
+      : '';
+  }
+  async function loadOptions(preselectCustomer = '') {
+    if (!state.writable) return;
+    const operation = $('operation').value;
+    try {
+      const result = await request('/api/customers/options?operation=' + encodeURIComponent(operation));
+      state.options = { customers: result.customers || [], distributors: result.distributors || [] };
+      fillSelect('customerId', state.options.customers, '請選擇客戶');
+      fillSelect('distributorId', state.options.distributors, '請選擇直銷商');
+      if (preselectCustomer && state.options.customers.some(m => m.member_id === preselectCustomer))
+        $('customerId').value = preselectCustomer;
+      updateCurrentService();
+    } catch (error) {
+      $('actionMessage').textContent = '載入可選會員失敗：' + explain(error);
+    }
+  }
+
   function updateOperation() {
     const operation = $('operation').value;
     const ending = operation === 'end-service';
@@ -63,18 +93,19 @@ import { CONFIG } from './config.js';
     $('submitAction').textContent = {
       assign: '確認指派', transfer: '確認轉移', 'end-service': '確認結束服務'
     }[operation];
+    updateCurrentService();
   }
 
   function render() {
     const q = $('search').value.trim().toLowerCase();
     const filtered = state.customers.filter(r =>
-      [r.customer?.name, r.customer?.member_id, r.distributor_member_id]
+      [r.customer?.name, r.customer?.member_id, r.distributor_member_id, state.options.distributors.find(d => d.member_id === r.distributor_member_id)?.name]
         .some(v => String(v || '').toLowerCase().includes(q)));
     $('count').textContent = `符合 ${filtered.length} 筆／總計 ${state.customers.length} 筆`;
     $('rows').innerHTML = filtered.map(r => `
       <tr>
         <td>${esc(r.customer?.name)}</td><td>${esc(r.customer?.member_id)}</td>
-        <td>${esc(r.customer?.role)}</td><td>${esc(r.distributor_member_id)}</td>
+        <td>${esc(r.customer?.role)}</td><td>${esc(state.options.distributors.find(d => d.member_id === r.distributor_member_id)?.name || '—')} (${esc(r.distributor_member_id)})</td>
         <td>${esc(r.created_at)}</td>
         <td><button type="button" data-history="${esc(r.customer?.member_id)}">查看歷史</button>
         <button type="button" data-transfer="${esc(r.customer?.member_id)}" data-distributor="${esc(r.distributor_member_id)}" ${state.writable ? '' : 'disabled'}>轉移</button>
@@ -126,9 +157,11 @@ import { CONFIG } from './config.js';
       $('actionMessage').textContent = '客戶與服務直銷商不能是同一人'; return;
     }
     const labels = { assign: '指派', transfer: '轉移', 'end-service': '結束' };
+    const customerLabel = labelOf(state.options.customers.find(m => m.member_id === customer) || { member_id: customer });
+    const distributorLabel = labelOf(state.options.distributors.find(m => m.member_id === distributor) || { member_id: distributor });
     const detail = operation === 'end-service'
-      ? `確定結束客戶 ${customer} 的服務關係？\n歷史紀錄會保留。`
-      : `確定將客戶 ${customer} ${labels[operation]}至直銷商 ${distributor}？`;
+      ? `確定結束客戶 ${customerLabel} 的服務關係？\n歷史紀錄會保留。`
+      : `確定將客戶 ${customerLabel} ${labels[operation]}至直銷商 ${distributorLabel}？`;
     if (!window.confirm(detail)) return;
     setBusy(true);
     $('actionMessage').textContent = '正在處理…';
@@ -142,6 +175,7 @@ import { CONFIG } from './config.js';
       updateOperation();
       setBusy(false);
       await load();
+      await loadOptions();
       if (state.historyId === customer) await history(customer);
     } catch (error) {
       $('actionMessage').textContent = '操作失敗：' + explain(error);
@@ -165,6 +199,7 @@ import { CONFIG } from './config.js';
       $('createForm').reset();
       setBusy(false);
       await load();
+      await loadOptions();
     } catch (error) {
       $('createMessage').textContent = '建立失敗：' + explain(error);
       setBusy(false);
@@ -197,30 +232,32 @@ import { CONFIG } from './config.js';
       $('permissionMessage').textContent = '權限驗證失敗：' + explain(error);
       return;
     } finally { setBusy(false); }
+    await loadOptions();
     await load();
   }
 
-  $('operation').addEventListener('change', updateOperation);
+  $('operation').addEventListener('change', async () => { updateOperation(); await loadOptions(); });
+  $('customerId').addEventListener('change', updateCurrentService);
   $('manageForm').addEventListener('submit', submit);
   $('createForm').addEventListener('submit', createCustomer);
   $('reload').addEventListener('click', load);
   $('search').addEventListener('input', render);
-  $('rows').addEventListener('click', event => {
+  $('rows').addEventListener('click', async event => {
     const button = event.target.closest('button');
     if (!button || state.busy) return;
     if (button.dataset.history) { history(button.dataset.history); return; }
     if (!state.writable) return;
     if (button.dataset.transfer) {
       $('operation').value = 'transfer';
-      $('customerId').value = button.dataset.transfer;
-      $('distributorId').value = '';
       updateOperation();
+      await loadOptions(button.dataset.transfer);
+      $('distributorId').value = '';
       $('customerId').scrollIntoView({ behavior: 'smooth', block: 'center' });
       $('distributorId').focus();
     } else if (button.dataset.end) {
       $('operation').value = 'end-service';
-      $('customerId').value = button.dataset.end;
       updateOperation();
+      await loadOptions(button.dataset.end);
       $('customerId').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   });

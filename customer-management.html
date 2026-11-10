@@ -13,18 +13,20 @@
 <body data-page="customers">
 <div class="app-shell"><header class="app-header" id="appHeader"></header><main class="wrap app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>服務客戶</h1><p>快速查詢、指派及管理服務關係</p></div>
 <p>服務客戶與會員上下線分開管理。指派、轉移及結束服務會更新 D1 資料。</p>
-<section class="card" aria-labelledby="createHeading">
-<h2 id="createHeading">新增客戶</h2>
-<p>由直銷商直接建立一般會員，並自動建立組織與服務關係。此操作不會啟用客戶登入。</p>
-<form id="createForm">
-<div class="form-grid">
-<label>客戶姓名 <input id="createName" maxlength="100" required autocomplete="name" placeholder="請輸入客戶姓名"></label>
-<label>Email（選填） <input id="createEmail" type="email" maxlength="254" autocomplete="email" placeholder="customer@example.com"></label>
-<label>電話（選填） <input id="createPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="09xxxxxxxx"></label>
+<section aria-labelledby="listHeading">
+<h2 id="listHeading">目前服務客戶</h2>
+<div class="actions">
+<button id="reload" type="button">重新載入</button>
+<input aria-label="搜尋客戶" id="search" placeholder="搜尋客戶姓名、ID、服務直銷商" type="search"/>
 </div>
-<button id="createButton" type="submit" disabled>建立客戶並指派給我</button>
-<p id="createMessage" role="status"></p>
-</form>
+<p id="message" role="status">準備載入資料…</p>
+<p id="count"></p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>客戶姓名</th><th>客戶 ID</th><th>會員類型</th><th>服務直銷商</th><th>建立時間</th><th>操作</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
 </section>
 <section aria-labelledby="manageHeading" class="card">
 <h2 id="manageHeading">服務關係管理</h2>
@@ -38,32 +40,31 @@
 <option value="end-service">結束服務</option>
 </select>
 </label>
-<label>客戶會員 ID
-          <input autocomplete="off" id="customerId" maxlength="100" placeholder="例如 CUSTOMER001" required=""/>
+<label>客戶（姓名 / 會員 ID）
+          <select id="customerId" required><option value="">請先選擇客戶</option></select>
 </label>
-<label id="distributorField">服務直銷商會員 ID
-          <input autocomplete="off" id="distributorId" maxlength="100" placeholder="例如 DIST001"/>
+<label id="distributorField">服務直銷商（姓名 / 會員 ID）
+          <select id="distributorId"><option value="">請選擇服務直銷商</option></select>
 </label>
 </div>
+<p class="hint" id="currentService"></p>
 <p class="hint" id="operationHint">指派尚未有有效服務關係的客戶。</p>
 <button disabled="" id="submitAction" type="submit">確認指派</button>
 <p id="actionMessage" role="status"></p>
 </form>
 </section>
-<section aria-labelledby="listHeading">
-<h2 id="listHeading">目前服務客戶</h2>
-<div class="actions">
-<button id="reload" type="button">重新載入</button>
-<input aria-label="搜尋客戶" id="search" placeholder="搜尋客戶姓名、ID、服務直銷商" type="search"/>
+<section class="card" aria-labelledby="createHeading">
+<h2 id="createHeading">新增客戶</h2>
+<p>由直銷商直接建立一般會員，並自動建立組織與服務關係。此操作不會啟用客戶登入。</p>
+<form id="createForm">
+<div class="form-grid">
+<label>客戶姓名 <input id="createName" maxlength="100" required autocomplete="name" placeholder="請輸入客戶姓名"></label>
+<label>Email（選填） <input id="createEmail" type="email" maxlength="254" autocomplete="email" placeholder="customer@example.com"></label>
+<label>電話（選填） <input id="createPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="09xxxxxxxx"></label>
 </div>
-<p id="message" role="status">準備載入資料…</p>
-<p id="count"></p>
-<div class="table-wrap">
-<table>
-<thead><tr><th>客戶姓名</th><th>客戶 ID</th><th>會員類型</th><th>服務直銷商 ID</th><th>建立時間</th><th>操作</th></tr></thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
+<button id="createButton" type="submit" disabled>建立客戶並指派給我</button>
+<p id="createMessage" role="status"></p>
+</form>
 </section>
 <section hidden="" id="historyPanel">
 <h2>服務關係歷史</h2>

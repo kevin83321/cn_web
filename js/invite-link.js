@@ -6,6 +6,8 @@ import { CONFIG } from './config.js';
   const getToken = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   let inviteUrl = '';
   let inviteType = 'member';
+  let customersLoaded = false;
+  let customersLoading = false;
   const params = new URLSearchParams(location.search);
   const initialCustomer = params.get('customer_member_id') || params.get('customer_id') || '';
 
@@ -15,15 +17,43 @@ import { CONFIG } from './config.js';
     $('inviteResult').hidden = true;
     $('inviteLinkOutput').textContent = '';
     inviteUrl = '';
+    if (type === 'claim') loadCustomers();
   }
   for (const radio of document.querySelectorAll('input[name="inviteType"]')) {
     radio.addEventListener('change', () => { if (radio.checked) setType(radio.value); });
   }
   if (initialCustomer) {
-    $('customerId').value = initialCustomer;
     document.querySelector('input[name="inviteType"][value="claim"]').checked = true;
     setType('claim');
   }
+
+  async function loadCustomers(force = false) {
+    if (customersLoading || (customersLoaded && !force)) return;
+    customersLoading = true;
+    const select = $('customerId');
+    const previous = select.value || initialCustomer;
+    select.disabled = true;
+    $('customerInfo').textContent = '正在查詢可認領客戶…';
+    try {
+      const token = getToken();
+      if (!token) throw Error('請先登入會員帳號');
+      const res = await fetch(CONFIG.API_BASE + '/api/auth/customer-claims/eligible', {
+        headers: { Authorization: 'Bearer ' + token }, cache: 'no-store'
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw Error(data.error || `HTTP_${res.status}`);
+      const customers = Array.isArray(data.customers) ? data.customers : [];
+      select.replaceChildren(new Option('請選擇客戶', ''));
+      customers.forEach(c => select.add(new Option(`${c.name} (${c.member_id})`, c.member_id)));
+      if (customers.some(c => c.member_id === previous)) select.value = previous;
+      $('customerInfo').textContent = `可認領客戶共 ${customers.length} 位` +
+        (initialCustomer && !customers.some(c => c.member_id === initialCustomer) ? '；帶入的客戶不在可選名單中' : '');
+      customersLoaded = true;
+    } catch (error) {
+      $('customerInfo').textContent = '載入失敗：' + (error.message || '未知錯誤');
+    } finally { select.disabled = false; customersLoading = false; }
+  }
+  $('reloadCustomers').addEventListener('click', () => loadCustomers(true));
 
   async function api(path, body) {
     const token = getToken();
@@ -62,7 +92,7 @@ import { CONFIG } from './config.js';
     $('inviteLinkOutput').textContent = '正在產生連結…';
     try {
       const id = $('customerId').value.trim();
-      if (inviteType === 'claim' && !id) throw Error('請輸入客戶會員 ID');
+      if (inviteType === 'claim' && !id) throw Error('請先選擇客戶');
       const data = inviteType === 'claim'
         ? await api('/api/auth/customer-claims', { customer_member_id: id })
         : await api('/api/auth/invitations');

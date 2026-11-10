@@ -1,18 +1,29 @@
 
 'use strict';
 
+import {
+  $,
+  esc,
+  api,
+  getToken,
+  errors
+} from './admin-common.js';
+
 (() => {
-  const $ = id => document.getElementById(id);
   const state = {
     page: 1,
     pageSize: 20,
     total: 0,
-    loading: false
+    loading: false,
+    authorized: false,
+    canEdit: false,
+    selected: null,
+    detailRequestId: 0,
+    listRequestId: 0
   };
 
-  const permission = 'admin.members.read';
-  let canEdit = false;
-  let selected = null;
+  const READ_PERMISSION = 'admin.members.read';
+  const UPDATE_PERMISSION = 'admin.members.update';
 
   const roleNames = {
     distributor: '直銷商',
@@ -26,14 +37,43 @@
     suspended: '暫停'
   };
 
-  const errorText = error =>
-    errors[error.message] || ('操作失敗：' + error.message);
-
   const roleText = value =>
     roleNames[value] || value || '—';
 
   const statusText = value =>
     statusNames[value] || value || '—';
+
+  const errorText = error => {
+    const code = error?.message || 'UNKNOWN_ERROR';
+
+    return errors[code] || ('操作失敗：' + code);
+  };
+
+  function setMessage(text) {
+    const element = $('message');
+    if (element) element.textContent = text;
+  }
+
+  function setDetailMessage(text) {
+    const element = $('detailMessage');
+    if (element) element.textContent = text;
+  }
+
+  function setSearchDisabled(disabled) {
+    const button =
+      $('searchButton') ||
+      $('filters')?.querySelector('[type="submit"]');
+
+    if (button) button.disabled = disabled;
+  }
+
+  function setFiltersDisabled(disabled) {
+    $('filters')
+      ?.querySelectorAll('input, select, button')
+      .forEach(element => {
+        element.disabled = disabled;
+      });
+  }
 
   function params() {
     const p = new URLSearchParams({
@@ -42,27 +82,29 @@
     });
 
     for (const key of ['role', 'status']) {
-      if ($(key).value) {
-        p.set(key, $(key).value);
-      }
+      const value = $(key)?.value || '';
+      if (value) p.set(key, value);
     }
 
-    if ($('query').value.trim()) {
-      p.set('q', $('query').value.trim());
-    }
+    const query = $('query')?.value.trim() || '';
+    if (query) p.set('q', query);
 
     return p.toString();
   }
 
   function itemCard(member) {
+    const memberId = String(member.member_id || '');
+
+    const isSelected =
+      state.selected?.member_id === memberId;
+
     return `
       <article class="admin-item${
-        selected?.member_id === member.member_id
-          ? ' is-selected'
-          : ''
+        isSelected ? ' is-selected' : ''
       }">
         <div class="admin-item-head">
-          <strong>${esc(member.name)}</strong>
+          <strong>${esc(member.name || '未設定姓名')}</strong>
+
           <span class="admin-pill">
             ${esc(roleText(member.role))}
           </span>
@@ -71,7 +113,7 @@
         <dl>
           <div>
             <dt>會員 ID</dt>
-            <dd>${esc(member.member_id)}</dd>
+            <dd>${esc(memberId)}</dd>
           </div>
 
           <div>
@@ -88,7 +130,7 @@
         <button
           type="button"
           class="detail-open"
-          data-member-id="${esc(member.member_id)}"
+          data-member-id="${esc(memberId)}"
         >
           查看詳細資料
         </button>
@@ -96,15 +138,58 @@
     `;
   }
 
+  function updateSelection() {
+    document.querySelectorAll('.admin-item')
+      .forEach(card => {
+        const button = card.querySelector(
+          '[data-member-id]'
+        );
+
+        card.classList.toggle(
+          'is-selected',
+          !!state.selected &&
+          button?.dataset.memberId ===
+            state.selected.member_id
+        );
+      });
+  }
+
+  function updatePagination() {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(state.total / state.pageSize)
+    );
+
+    if ($('count')) {
+      $('count').textContent =
+        `共 ${state.total} 筆`;
+    }
+
+    if ($('pageInfo')) {
+      $('pageInfo').textContent =
+        `第 ${state.page} / ${totalPages} 頁`;
+    }
+
+    if ($('previous')) {
+      $('previous').disabled =
+        state.loading || state.page <= 1;
+    }
+
+    if ($('next')) {
+      $('next').disabled =
+        state.loading || state.page >= totalPages;
+    }
+  }
+
   async function load() {
-    if (state.loading) return;
+    if (!state.authorized || state.loading) return;
 
     state.loading = true;
+    const requestId = ++state.listRequestId;
 
-    $('message').textContent = '正在載入…';
-    $('previous').disabled = true;
-    $('next').disabled = true;
-    $('searchButton').disabled = true;
+    setMessage('正在載入會員資料…');
+    setSearchDisabled(true);
+    updatePagination();
 
     try {
       const data = await api(
@@ -112,8 +197,10 @@
       );
 
       if (!Array.isArray(data.items)) {
-        throw Error('INVALID_RESPONSE');
+        throw new Error('INVALID_RESPONSE');
       }
+
+      if (requestId !== state.listRequestId) return;
 
       state.total = Number(data.total) || 0;
       state.page = Number(data.page) || state.page;
@@ -122,45 +209,63 @@
         data.items.map(itemCard).join('') ||
         '<p class="admin-empty">沒有符合條件的會員</p>';
 
-      $('count').textContent =
-        `共 ${state.total} 筆`;
-
-      $('pageInfo').textContent =
-        `第 ${state.page} / ${
-          Math.max(
-            1,
-            Math.ceil(state.total / state.pageSize)
-          )
-        } 頁`;
-
-      $('message').textContent = '';
-
-      $('previous').disabled =
-        state.page <= 1;
-
-      $('next').disabled =
-        state.page * state.pageSize >= state.total;
+      updateSelection();
+      setMessage('');
 
     } catch (error) {
-      $('message').textContent = errorText(error);
+      console.error('[ADMIN MEMBERS] Load failed:', error);
+
+      if (requestId !== state.listRequestId) return;
+
+      setMessage(errorText(error));
       $('items').replaceChildren();
-      $('count').textContent = '—';
+
+      if ($('count')) {
+        $('count').textContent = '—';
+      }
 
     } finally {
-      state.loading = false;
-      $('searchButton').disabled = false;
+      if (requestId === state.listRequestId) {
+        state.loading = false;
+        setSearchDisabled(false);
+        updatePagination();
+      }
     }
   }
 
+  function fillDetail(member) {
+    $('detailId').value = member.member_id || '';
+    $('detailName').value = member.name || '';
+    $('detailEmail').value = member.email || '';
+    $('detailPhone').value = member.phone || '';
+
+    $('detailRole').value = roleText(member.role);
+    $('detailStatus').value = statusText(member.status);
+    $('detailCreated').value = member.created_at || '';
+
+    for (const key of [
+      'detailName',
+      'detailEmail',
+      'detailPhone'
+    ]) {
+      $(key).readOnly = !state.canEdit;
+    }
+
+    $('detailSave').hidden = !state.canEdit;
+  }
+
   async function openDetail(memberId) {
+    if (!state.authorized) return;
+
+    const requestId = ++state.detailRequestId;
     const panel = $('memberDetail');
 
-    selected = null;
+    state.selected = null;
     panel.hidden = false;
-
     $('detailForm').hidden = true;
-    $('detailMessage').textContent =
-      '正在載入會員資料…';
+
+    setDetailMessage('正在載入會員資料…');
+    updateSelection();
 
     try {
       const data = await api(
@@ -168,223 +273,271 @@
         encodeURIComponent(memberId)
       );
 
-      selected = data.member;
+      if (requestId !== state.detailRequestId) return;
 
-      if (!selected) {
-        throw Error('INVALID_RESPONSE');
+      if (!data.member) {
+        throw new Error('INVALID_RESPONSE');
       }
 
-      $('detailId').value =
-        selected.member_id;
+      state.selected = data.member;
 
-      $('detailName').value =
-        selected.name || '';
-
-      $('detailEmail').value =
-        selected.email || '';
-
-      $('detailPhone').value =
-        selected.phone || '';
-
-      $('detailRole').value =
-        roleText(selected.role);
-
-      $('detailStatus').value =
-        statusText(selected.status);
-
-      $('detailCreated').value =
-        selected.created_at || '';
-
-      for (const key of [
-        'detailName',
-        'detailEmail',
-        'detailPhone'
-      ]) {
-        $(key).readOnly = !canEdit;
-      }
-
-      $('detailSave').hidden = !canEdit;
+      fillDetail(state.selected);
       $('detailForm').hidden = false;
 
-      $('detailMessage').textContent =
-        canEdit
+      setDetailMessage(
+        state.canEdit
           ? '可修改姓名、Email、電話。'
-          : '此帳號僅有檢視權限。';
+          : '此帳號僅有檢視權限。'
+      );
 
-      document.querySelectorAll(
-        '.admin-item'
-      ).forEach(card => {
-        card.classList.toggle(
-          'is-selected',
-          card.querySelector(
-            '[data-member-id]'
-          )?.dataset.memberId === memberId
-        );
+      updateSelection();
+
+      panel.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
       });
 
     } catch (error) {
-      $('detailMessage').textContent =
-        errorText(error);
-    }
+      if (requestId !== state.detailRequestId) return;
 
-    panel.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+      console.error(
+        '[ADMIN MEMBERS] Detail failed:',
+        error
+      );
+
+      state.selected = null;
+      $('detailForm').hidden = true;
+
+      setDetailMessage(errorText(error));
+      updateSelection();
+    }
   }
 
-  async function init() {
-    if (!TOKEN) {
-      location.replace('./index.html');
+  function closeDetail() {
+    state.detailRequestId++;
+    state.selected = null;
+
+    $('memberDetail').hidden = true;
+    $('detailForm').hidden = true;
+
+    updateSelection();
+  }
+
+  async function saveDetail(event) {
+    event.preventDefault();
+
+    if (
+      !state.authorized ||
+      !state.canEdit ||
+      !state.selected
+    ) {
       return;
     }
 
+    const memberId = state.selected.member_id;
+
+    const body = {
+      name: $('detailName').value.trim(),
+      email: $('detailEmail').value.trim() || null,
+      phone: $('detailPhone').value.trim() || null
+    };
+
+    if (!body.name) {
+      setDetailMessage('請輸入會員姓名');
+      $('detailName').focus();
+      return;
+    }
+
+    const button = $('detailSave');
+
+    button.disabled = true;
+    setDetailMessage('正在儲存會員資料…');
+
     try {
-      const permissions = await api(
-        '/api/auth/permissions'
+      const data = await api(
+        '/api/admin/members/' +
+        encodeURIComponent(memberId),
+        {
+          method: 'PATCH',
+          body
+        }
       );
 
-      if (
-        !Array.isArray(permissions.permissions) ||
-        !permissions.permissions.includes(permission)
-      ) {
-        $('message').textContent =
-          '此帳號沒有管理員查詢權限';
-
-        $('filters')
-          .querySelectorAll('input,select,button')
-          .forEach(el => {
-            el.disabled = true;
-          });
-
-        return;
+      if (data.member) {
+        state.selected = data.member;
+      } else {
+        state.selected = {
+          ...state.selected,
+          ...body
+        };
       }
 
-      canEdit = permissions.permissions.includes(
-        'admin.members.update'
+      fillDetail(state.selected);
+
+      setDetailMessage(
+        data.changed === false
+          ? '資料沒有變更。'
+          : '會員資料已儲存。'
       );
 
       await load();
 
     } catch (error) {
-      $('message').textContent =
-        errorText(error);
+      console.error(
+        '[ADMIN MEMBERS] Save failed:',
+        error
+      );
+
+      setDetailMessage(errorText(error));
+
+    } finally {
+      button.disabled = false;
     }
   }
 
-  // 會員列表：開啟詳細資料
-  $('items').addEventListener('click', event => {
-    const button = event.target.closest(
-      '[data-member-id]'
+  async function init() {
+    console.log('[ADMIN MEMBERS] Initializing');
+
+    const token = getToken();
+
+    if (!token) {
+      location.replace('./index.html');
+      return;
+    }
+
+    if (!$('items') || !$('filters')) {
+      console.error(
+        '[ADMIN MEMBERS] Required HTML elements missing'
+      );
+      return;
+    }
+
+    // 會員列表
+    $('items').addEventListener('click', event => {
+      const button = event.target.closest(
+        '[data-member-id]'
+      );
+
+      if (button) {
+        openDetail(button.dataset.memberId);
+      }
+    });
+
+    // 詳細資料
+    $('detailClose')?.addEventListener(
+      'click',
+      closeDetail
     );
 
-    if (button) {
-      openDetail(button.dataset.memberId);
-    }
-  });
+    $('detailForm')?.addEventListener(
+      'submit',
+      saveDetail
+    );
 
-  // 關閉詳細資料
-  $('detailClose').addEventListener('click', () => {
-    $('memberDetail').hidden = true;
-    selected = null;
+    // 搜尋
+    $('filters').addEventListener(
+      'submit',
+      event => {
+        event.preventDefault();
 
-    document.querySelectorAll(
-      '.admin-item'
-    ).forEach(card => {
-      card.classList.remove('is-selected');
-    });
-  });
+        if (!state.authorized || state.loading) return;
 
-  // 儲存會員資料
-  $('detailForm').addEventListener(
-    'submit',
-    async event => {
-      event.preventDefault();
-
-      if (!canEdit || !selected) return;
-
-      const body = {
-        name: $('detailName').value.trim(),
-        email: $('detailEmail').value.trim() || null,
-        phone: $('detailPhone').value.trim() || null
-      };
-
-      $('detailSave').disabled = true;
-      $('detailMessage').textContent = '儲存中…';
-
-      try {
-        const data = await api(
-          '/api/admin/members/' +
-          encodeURIComponent(selected.member_id),
-          {
-            method: 'PATCH',
-            body
-          }
-        );
-
-        selected = data.member || selected;
-
-        $('detailMessage').textContent =
-          data.changed
-            ? '已儲存，操作紀錄已建立。'
-            : '資料沒有變更。';
-
-        await load();
-
-      } catch (error) {
-        $('detailMessage').textContent =
-          errorText(error);
-
-      } finally {
-        $('detailSave').disabled = false;
-      }
-    }
-  );
-
-  // 搜尋與篩選
-  $('filters').addEventListener(
-    'submit',
-    event => {
-      event.preventDefault();
-      state.page = 1;
-      load();
-    }
-  );
-
-  // 重設篩選
-  $('resetFilters').addEventListener(
-    'click',
-    () => {
-      $('filters').reset();
-      state.page = 1;
-      load();
-    }
-  );
-
-  // 上一頁
-  $('previous').addEventListener(
-    'click',
-    () => {
-      if (state.page > 1) {
-        state.page--;
+        state.page = 1;
         load();
       }
-    }
-  );
+    );
 
-  // 下一頁
-  $('next').addEventListener(
-    'click',
-    () => {
+    // 重設搜尋
+    $('resetFilters')?.addEventListener(
+      'click',
+      () => {
+        if (!state.authorized || state.loading) return;
+
+        $('filters').reset();
+        state.page = 1;
+        load();
+      }
+    );
+
+    // 上一頁
+    $('previous')?.addEventListener(
+      'click',
+      () => {
+        if (
+          !state.loading &&
+          state.page > 1
+        ) {
+          state.page--;
+          load();
+        }
+      }
+    );
+
+    // 下一頁
+    $('next')?.addEventListener(
+      'click',
+      () => {
+        if (
+          !state.loading &&
+          state.page * state.pageSize < state.total
+        ) {
+          state.page++;
+          load();
+        }
+      }
+    );
+
+    setMessage('正在確認管理員權限…');
+
+    try {
+      const result = await api(
+        '/api/auth/permissions'
+      );
+
+      const permissions = result.permissions;
+
       if (
-        state.page * state.pageSize <
-        state.total
+        !Array.isArray(permissions) ||
+        !permissions.includes(READ_PERMISSION)
       ) {
-        state.page++;
-        load();
+        setMessage('此帳號沒有會員管理查詢權限');
+        setFiltersDisabled(true);
+        return;
       }
-    }
-  );
 
-  init();
+      state.authorized = true;
+
+      state.canEdit = permissions.includes(
+        UPDATE_PERMISSION
+      );
+
+      console.log(
+        '[ADMIN MEMBERS] Permission verified',
+        {
+          canEdit: state.canEdit
+        }
+      );
+
+      await load();
+
+    } catch (error) {
+      console.error(
+        '[ADMIN MEMBERS] Init failed:',
+        error
+      );
+
+      setMessage(errorText(error));
+      setFiltersDisabled(true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      init,
+      { once: true }
+    );
+  } else {
+    init();
+  }
 })();

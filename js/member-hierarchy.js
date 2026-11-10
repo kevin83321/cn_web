@@ -16,7 +16,7 @@ async function api(action, extra = {}) {
   if (!path) throw new Error('未支援的 API：' + action);
   const token = extra.token || sessionToken;
   if (!token) return { success: false, error: 'UNAUTHORIZED' };
-  const response = await fetch(CONFIG.BASE + path, {
+  const response = await fetch(CONFIG.API_BASE.replace(/\/+$/, '') + path, {
     method: 'GET',
     headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
     cache: 'no-store'

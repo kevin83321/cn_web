@@ -16,14 +16,26 @@
 
 'use strict';
 
-(function loadAuthGuard() {
-  if (window.CNAuthGuard) return;
-
-  const script = document.createElement('script');
-  script.src = new URL('../js/auth-guard.js', document.currentScript.src).href;
-  script.async = false;
-
-  document.head.appendChild(script);
+// App Shell 是全站共用入口；只有受保護頁面才載入 Auth Guard。
+// 使用 Promise 確保頁面 API 呼叫前，攔截器已完成安裝。
+window.CNAuthGuardReady = (() => {
+  const page = location.pathname.split('/').pop().toLowerCase();
+  if (!page || ['index.html', 'register.html', 'login.html'].includes(page)) {
+    return Promise.resolve(null);
+  }
+  if (window.CNAuthGuard) return Promise.resolve(window.CNAuthGuard);
+  const source = document.currentScript && document.currentScript.src;
+  const url = new URL('./auth-guard.js', source || location.href);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = url.href;
+    script.onload = () => window.CNAuthGuard
+      ? resolve(window.CNAuthGuard)
+      : reject(new Error('AUTH_GUARD_NOT_INITIALIZED'));
+    script.onerror = () => reject(new Error('AUTH_GUARD_LOAD_FAILED'));
+    document.head.appendChild(script);
+  });
 })();
 
 (() => {
@@ -37,7 +49,6 @@
     home: ['CN 會員中心', 'Member Portal'],
     hierarchy: ['會員階層', 'CN MEMBER PORTAL'],
     customers: ['服務客戶', 'CN MEMBER PORTAL'],
-    invites: ['邀請管理', 'CN MEMBER PORTAL'],
     members: ['會員管理', 'CN MEMBER PORTAL'],
     audit: ['操作紀錄', 'CN MEMBER PORTAL'],
     register: ['加入 CN', 'CN MEMBER PORTAL']

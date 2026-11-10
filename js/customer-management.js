@@ -2,73 +2,197 @@
 import { CONFIG } from './config.js';
 
 (() => {
-  
   const $ = id => document.getElementById(id);
-  const token = localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
-  const state = { customers: [], actor: null, busy: false };
-  const esc = value => String(value ?? '').replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
-  );
-
-  const ERROR_MESSAGES = {
-    UNAUTHORIZED: '登入已失效，請返回會員中心重新登入',
-    FORBIDDEN: '目前帳號沒有操作權限',
-    OUTSIDE_MANAGEMENT_SCOPE: '會員不在可管理範圍內',
-    INVALID_ARGUMENT: '請檢查會員 ID 是否正確',
-    MEMBER_INACTIVE: '會員狀態不是有效狀態',
+  const state = { customers: [], actor: null, busy: false, writable: false, historyId: null };
+  const esc = value => String(value ?? '—').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const messages = {
+    UNAUTHORIZED: '登入已失效，請重新登入', FORBIDDEN: '目前帳號沒有操作權限',
+    OUTSIDE_MANAGEMENT_SCOPE: '會員不在可管理的組織範圍內', INVALID_ARGUMENT: '請檢查會員 ID',
+    INVALID_JSON: '請求格式不正確', MEMBER_NOT_FOUND: '找不到指定會員',
+    MEMBER_INACTIVE: '會員帳號未啟用', INVALID_CUSTOMER_ROLE: '此會員類型不能成為服務客戶',
+    INVALID_DISTRIBUTOR_ROLE: '指定會員不是直銷商',
     CUSTOMER_ALREADY_ASSIGNED: '此客戶已有有效服務關係',
     CUSTOMER_NOT_ASSIGNED: '此客戶目前沒有有效服務關係',
-    SERVICE_CONFLICT: '服務關係已被其他操作更新，請重新載入'
+    SERVICE_CONFLICT: '服務關係已被其他操作變更，請重新載入',
+    PASSWORD_CHANGE_REQUIRED: '請先返回會員中心修改密碼',
+    RESULT_TOO_LARGE: '查詢結果過多，請聯絡管理員'
   };
+  const explain = error => messages[error?.message] || error?.message || '未知錯誤';
+  const getToken = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
 
-  function explain(error) {
-    return ERROR_MESSAGES[error.message] || error.message;
-  }
-
-  async function request(path, method = 'GET', body = undefined) {
+  async function request(path, method = 'GET', body) {
     await window.CNAuthGuardReady;
+    const token = getToken();
+    if (!token) throw Error('UNAUTHORIZED');
     const response = await fetch(CONFIG.API_BASE + path, {
-      method,
-      cache: 'no-store',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' })
-      },
+      method, cache: 'no-store',
+      headers: { Authorization: 'Bearer ' + token,
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
     let data;
-    try { data = await response.json(); }
-    catch { throw new Error('HTTP_' + response.status); }
-    if (!response.ok || !data.success) throw new Error(data.error || 'HTTP_' + response.status);
+    try { data = await response.json(); } catch { throw Error('HTTP_' + response.status); }
+    if (!response.ok || !data.success) throw Error(data.error || 'HTTP_' + response.status);
     return data;
   }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    $('reload').disabled = busy;
+    $('operation').disabled = busy || !state.writable;
+    $('customerId').disabled = busy || !state.writable;
+    $('distributorId').disabled = busy || !state.writable;
+    $('submitAction').disabled = busy || !state.writable;
+  }
+
+  function updateOperation() {
+    const operation = $('operation').value;
+    const ending = operation === 'end-service';
+    $('distributorField').hidden = ending;
+    $('distributorId').required = !ending;
+    $('operationHint').textContent = {
+      assign: '指派尚未有有效服務關係的客戶。',
+      transfer: '將已有服務關係的客戶轉給另一位直銷商。',
+      'end-service': '結束客戶目前的服務關係，歷史紀錄會保留。'
+    }[operation];
+    $('submitAction').textContent = {
+      assign: '確認指派', transfer: '確認轉移', 'end-service': '確認結束服務'
+    }[operation];
+  }
+
   function render() {
     const q = $('search').value.trim().toLowerCase();
-    const filtered = state.customers.filter(r => [r.customer?.name,r.customer?.member_id,r.distributor_member_id].some(x=>String(x||'').toLowerCase().includes(q)));
+    const filtered = state.customers.filter(r =>
+      [r.customer?.name, r.customer?.member_id, r.distributor_member_id]
+        .some(v => String(v || '').toLowerCase().includes(q)));
     $('count').textContent = `符合 ${filtered.length} 筆／總計 ${state.customers.length} 筆`;
-    $('rows').innerHTML = filtered.map(r => `<tr><td>${esc(r.customer?.name)}</td><td>${esc(r.customer?.member_id)}</td><td>${esc(r.customer?.role)}</td><td>${esc(r.distributor_member_id)}</td><td>${esc(r.created_at)}</td><td><button type="button" data-history="${esc(r.customer?.member_id)}">查看歷史</button></td></tr>`).join('') || '<tr><td colspan="6">沒有符合條件的客戶</td></tr>';
+    $('rows').innerHTML = filtered.map(r => `
+      <tr>
+        <td>${esc(r.customer?.name)}</td><td>${esc(r.customer?.member_id)}</td>
+        <td>${esc(r.customer?.role)}</td><td>${esc(r.distributor_member_id)}</td>
+        <td>${esc(r.created_at)}</td>
+        <td><button type="button" data-history="${esc(r.customer?.member_id)}">查看歷史</button>
+        <button type="button" data-transfer="${esc(r.customer?.member_id)}" data-distributor="${esc(r.distributor_member_id)}" ${state.writable ? '' : 'disabled'}>轉移</button>
+        <button type="button" data-end="${esc(r.customer?.member_id)}" ${state.writable ? '' : 'disabled'}>結束</button></td>
+      </tr>`).join('') || '<tr><td colspan="6">沒有符合條件的客戶</td></tr>';
   }
+
   async function load() {
-    if(!token) { $('message').textContent='尚未登入，請先返回會員中心';return; }
-    $('reload').disabled=true;$('message').textContent='正在載入服務客戶…';
+    if (state.busy) return;
+    $('reload').disabled = true;
+    $('message').textContent = '正在載入服務客戶…';
     try {
-      await request('/api/auth/me');
-      const result=await request('/api/customers');
+      const result = await request('/api/customers');
       state.customers = Array.isArray(result.customers) ? result.customers : [];
-      render();$('message').textContent='資料已更新';
-    } catch(error) { $('message').textContent='載入失敗：'+explain(error); }
-    finally { $('reload').disabled=false; }
+      render();
+      $('message').textContent = '資料已更新';
+    } catch (error) {
+      $('message').textContent = '載入失敗：' + explain(error);
+    } finally { $('reload').disabled = state.busy; }
   }
+
   async function history(customerId) {
-    $('historyPanel').hidden=false;$('historyMessage').textContent='正在查詢…';$('historyRows').innerHTML='';
+    state.historyId = customerId;
+    $('historyPanel').hidden = false;
+    $('historyMessage').textContent = '正在查詢…';
+    $('historyRows').replaceChildren();
     try {
-      const result=await request('/api/customers/'+encodeURIComponent(customerId)+'/services');
-      $('historyMessage').textContent=`${customerId}：${result.total} 筆服務紀錄`;
-      $('historyRows').innerHTML=(Array.isArray(result.services) ? result.services : []).map(r=>`<tr><td>${esc(r.service_id)}</td><td>${esc(r.distributor_member_id)}</td><td>${esc(r.status)}</td><td>${esc(r.created_at)}</td></tr>`).join('') || '<tr><td colspan="4">沒有可查看的紀錄</td></tr>';
-    } catch(error) { $('historyMessage').textContent='查詢失敗：'+explain(error); }
+      const result = await request('/api/customers/' + encodeURIComponent(customerId) + '/services');
+      $('historyMessage').textContent = `${customerId}：${result.total} 筆服務紀錄`;
+      $('historyRows').innerHTML = (Array.isArray(result.services) ? result.services : [])
+        .map(r => `<tr><td>${esc(r.service_id)}</td><td>${esc(r.distributor_member_id)}</td>
+          <td>${esc(r.status)}</td><td>${esc(r.created_at)}</td></tr>`).join('') ||
+        '<tr><td colspan="4">沒有可查看的紀錄</td></tr>';
+    } catch (error) {
+      $('historyMessage').textContent = '查詢失敗：' + explain(error);
+    }
   }
-  $('reload').addEventListener('click',load);
-  $('search').addEventListener('input',render);
-  $('rows').addEventListener('click',e=>{const btn=e.target.closest('[data-history]');if(btn)history(btn.dataset.history);});
-  load();
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!state.writable || state.busy) return;
+    const operation = $('operation').value;
+    const customer = $('customerId').value.trim();
+    const distributor = $('distributorId').value.trim();
+    if (!customer || (operation !== 'end-service' && !distributor)) {
+      $('actionMessage').textContent = '請填寫必要的會員 ID'; return;
+    }
+    if (operation !== 'end-service' && customer === distributor) {
+      $('actionMessage').textContent = '客戶與服務直銷商不能是同一人'; return;
+    }
+    const labels = { assign: '指派', transfer: '轉移', 'end-service': '結束' };
+    const detail = operation === 'end-service'
+      ? `確定結束客戶 ${customer} 的服務關係？\n歷史紀錄會保留。`
+      : `確定將客戶 ${customer} ${labels[operation]}至直銷商 ${distributor}？`;
+    if (!window.confirm(detail)) return;
+    setBusy(true);
+    $('actionMessage').textContent = '正在處理…';
+    try {
+      const body = { customer_member_id: customer };
+      if (operation !== 'end-service') body.distributor_member_id = distributor;
+      const result = await request('/api/customers/' + operation, 'POST', body);
+      $('actionMessage').textContent = result.changed === false
+        ? '服務關係沒有變更。' : '操作成功，服務關係與稽核紀錄已更新。';
+      if (result.changed !== false) $('manageForm').reset();
+      updateOperation();
+      setBusy(false);
+      await load();
+      if (state.historyId === customer) await history(customer);
+    } catch (error) {
+      $('actionMessage').textContent = '操作失敗：' + explain(error);
+      setBusy(false);
+    }
+  }
+
+  async function init() {
+    updateOperation();
+    setBusy(true);
+    try {
+      const [me, perms] = await Promise.all([
+        request('/api/auth/me'), request('/api/auth/permissions')
+      ]);
+      state.actor = me.member || null;
+      const granted = Array.isArray(perms.permissions) ? perms.permissions : [];
+      if (!granted.includes('customer.read') || state.actor?.role !== 'distributor') {
+        $('permissionMessage').textContent = '目前帳號無權使用客戶服務管理。';
+        $('message').textContent = '無權查詢客戶資料';
+        return;
+      }
+      // Current Worker write endpoints authorize by active distributor role and subtree,
+      // rather than a dedicated customer.write permission. Backend remains authoritative.
+      state.writable = state.actor.status === 'active';
+      $('permissionMessage').textContent = state.writable
+        ? '可管理授權組織範圍內的服務關係。' : '帳號目前不可修改服務關係。';
+    } catch (error) {
+      $('permissionMessage').textContent = '權限驗證失敗：' + explain(error);
+      return;
+    } finally { setBusy(false); }
+    await load();
+  }
+
+  $('operation').addEventListener('change', updateOperation);
+  $('manageForm').addEventListener('submit', submit);
+  $('reload').addEventListener('click', load);
+  $('search').addEventListener('input', render);
+  $('rows').addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button || state.busy) return;
+    if (button.dataset.history) { history(button.dataset.history); return; }
+    if (!state.writable) return;
+    if (button.dataset.transfer) {
+      $('operation').value = 'transfer';
+      $('customerId').value = button.dataset.transfer;
+      $('distributorId').value = '';
+      updateOperation();
+      $('customerId').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('distributorId').focus();
+    } else if (button.dataset.end) {
+      $('operation').value = 'end-service';
+      $('customerId').value = button.dataset.end;
+      updateOperation();
+      $('customerId').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+  init();
 })();

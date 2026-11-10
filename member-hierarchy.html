@@ -6,8 +6,8 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
   <title>會員階層管理</title>
-  <link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
-  <link href="./css/member-hierarchy.css" rel="stylesheet"/>
+  <link href="./css/member-hierarchy.css?v=20261110-94" rel="stylesheet"/>
+  <link href="./css/hierarchy-ui.css?v=20261110-94" rel="stylesheet"/>
   <link href="./css/app-shell.css?v=20261104-3" rel="stylesheet"/>
   <link rel="stylesheet" href="./css/cn-polish.css">
 </head>
@@ -20,6 +20,10 @@
       僅顯示目前登入會員的所有下線。
       資料由 Cloudflare Workers Session 權限決定。
     </p>
+<div class="hierarchy-tabs" role="tablist" aria-label="會員階層檢視">
+<button type="button" class="hierarchy-tab" id="hierarchyTabTree" role="tab" aria-controls="hierarchyTreePanel" aria-selected="true">組織階層</button>
+<button type="button" class="hierarchy-tab" id="hierarchyTabList" role="tab" aria-controls="hierarchyListPanel" aria-selected="false">會員查詢</button>
+</div>
 <div class="actions">
 <button id="hierarchyReload" type="button">
         載入／更新下線資料
@@ -34,10 +38,11 @@
 <p id="hierarchyMessage" role="status">
       請點擊「載入／更新下線資料」
     </p>
-<hr/>
+<div id="hierarchyTreePanel" role="tabpanel" aria-labelledby="hierarchyTabTree">
 <h2>會員階層樹</h2>
 <div class="hierarchy-tree" id="hierarchyTree"></div>
-<hr/>
+</div>
+<div id="hierarchyListPanel" role="tabpanel" aria-labelledby="hierarchyTabList" hidden>
 <h2>下線會員列表</h2>
 <label for="hierarchySearch">
       搜尋姓名、會員 ID、直屬上線
@@ -74,8 +79,13 @@
 <tbody id="hierarchyRows"></tbody>
 </table>
 </div>
+</div>
+<section class="hierarchy-detail" id="hierarchyDetail" hidden aria-labelledby="hierarchyDetailHeading">
+<div class="hierarchy-detail-top"><h2 id="hierarchyDetailHeading">會員資料</h2><button type="button" id="hierarchyDetailClose" class="muted">關閉</button></div>
+<div id="hierarchyDetailContent"></div>
+</section>
 </section>
 </main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div>
-<script src="./js/member-hierarchy.js" type="module"></script>
+<script type="module" src="./js/member-hierarchy.js?v=20261110-94"></script>
 </body>
 </html>

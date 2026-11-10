@@ -1,0 +1,32 @@
+/* Phase 9.4: hierarchy UI, scoped to avoid shared app header/footer collisions. */
+#hierarchyPanel{min-width:0}
+#hierarchyPanel .hierarchy-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;background:#edf2fa;padding:5px;border-radius:15px;margin:20px 0}
+#hierarchyPanel .hierarchy-tab{border:0;border-radius:11px;background:transparent;color:#53647d;min-height:48px;font-size:15px;font-weight:700}
+#hierarchyPanel .hierarchy-tab[aria-selected="true"]{background:#fff;color:#2354d5;box-shadow:0 2px 8px #17375a16}
+#hierarchyPanel .actions{display:flex;gap:8px;flex-wrap:wrap}
+#hierarchyPanel .actions button{min-height:42px}
+#hierarchyPanel .hierarchy-tree{overflow-x:auto;max-width:100%}
+#hierarchyPanel .hierarchy-node{min-width:0;flex-wrap:wrap}
+#hierarchyPanel .hierarchy-node small{overflow-wrap:anywhere;min-width:0}
+#hierarchyPanel .hierarchy-member-link{padding:2px 0;border:0;background:transparent;color:#2455c5;font:inherit;font-weight:700;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+#hierarchyPanel .hierarchy-member-link:focus-visible{outline:2px solid #2455c5;outline-offset:3px}
+#hierarchyPanel .hierarchy-table-wrap{max-width:100%}
+#hierarchyPanel .hierarchy-detail{margin-top:18px;border:1px solid #dce5f2;background:#fff;border-radius:15px;padding:16px}
+#hierarchyPanel .hierarchy-detail-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#hierarchyPanel .hierarchy-detail-top h2{margin:0}
+#hierarchyPanel .detail-fields{display:grid;gap:10px;margin:16px 0 0}
+#hierarchyPanel .detail-field{display:grid;grid-template-columns:85px minmax(0,1fr);gap:10px;border-bottom:1px solid #edf1f7;padding-bottom:9px}
+#hierarchyPanel .detail-field dt{color:#64748b;font-size:13px}
+#hierarchyPanel .detail-field dd{margin:0;overflow-wrap:anywhere;font-size:13px}
+@media(max-width:720px){
+  #hierarchyPanel .hierarchy-table-wrap{overflow:visible}
+  #hierarchyPanel .hierarchy-table{display:block;min-width:0;width:100%}
+  #hierarchyPanel .hierarchy-table thead{display:none}
+  #hierarchyPanel .hierarchy-table tbody{display:grid;gap:10px}
+  #hierarchyPanel .hierarchy-table tr{display:block;border:1px solid #dce5f2;border-radius:14px;padding:12px;background:#fff}
+  #hierarchyPanel .hierarchy-table td{display:grid;grid-template-columns:85px minmax(0,1fr);gap:8px;white-space:normal;overflow-wrap:anywhere;border:0;padding:6px 0;font-size:13px}
+  #hierarchyPanel .hierarchy-table td::before{content:attr(data-label);color:#64748b;font-weight:600}
+  #hierarchyPanel .hierarchy-table td[colspan]{display:block;text-align:center}
+  #hierarchyPanel .hierarchy-table td[colspan]::before{display:none}
+  #hierarchyPanel .grid{grid-template-columns:1fr}
+}

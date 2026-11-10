@@ -16,7 +16,7 @@ async function api(action, extra = {}) {
   if (!path) throw new Error('未支援的 API：' + action);
   const token = extra.token || sessionToken;
   if (!token) return { success: false, error: 'UNAUTHORIZED' };
-  const response = await fetch(CONFIG.API_BASE + path, {
+  const response = await fetch(CONFIG.BASE + path, {
     method: 'GET',
     headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
     cache: 'no-store'
@@ -65,7 +65,7 @@ async function verifySession() {
 (() => {
   'use strict';
 
-  const $ = id => document.getElementById(id);
+  // Shared $ helper declared above.
 
   const state = {
     members: [],
@@ -135,6 +135,23 @@ async function verifySession() {
     });
   }
 
+  function showDetail(memberId) {
+    const member = [state.root, ...state.members].find(m => m && id(m) === memberId);
+    if (!member) return;
+    const parentMember = [state.root, ...state.members].find(m => m && id(m) === parent(member));
+    const field = (label, value) => `<div class="detail-field"><dt>${label}</dt><dd>${esc(value || '—')}</dd></div>`;
+    $('hierarchyDetailContent').innerHTML = `<dl class="detail-fields">
+      ${field('姓名', member.name)}
+      ${field('會員 ID', member.member_id)}
+      ${field('角色', member.role)}
+      ${field('狀態', member.status)}
+      ${field('層級', memberId === id(state.root) ? '本人' : `第 ${member.depth ?? '—'} 層`)}
+      ${field('直屬上線', parentMember ? `${parentMember.name} (${id(parentMember)})` : parent(member))}
+    </dl>`;
+    $('hierarchyDetail').hidden = false;
+    $('hierarchyDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
   function renderTable() {
     const items = sort(filterMembers());
 
@@ -144,11 +161,11 @@ async function verifySession() {
     $('hierarchyRows').innerHTML =
       items.map(m => `
         <tr>
-          <td>${esc(m.name)}</td>
-          <td><code>${esc(m.member_id)}</code></td>
-          <td>${esc(m.parent_member_id)}</td>
-          <td>${esc(m.depth)}</td>
-          <td>${esc(m.status)}</td>
+          <td data-label="姓名"><button type="button" class="hierarchy-member-link" data-member-id="${esc(id(m))}">${esc(m.name)}</button></td>
+          <td data-label="會員 ID"><code>${esc(m.member_id)}</code></td>
+          <td data-label="直屬上線">${esc(m.parent_member_id)}</td>
+          <td data-label="層級">${esc(m.depth)}</td>
+          <td data-label="狀態">${esc(m.status)}</td>
         </tr>
       `).join('') ||
       '<tr><td colspan="5">沒有符合條件的會員</td></tr>';
@@ -210,9 +227,7 @@ async function verifySession() {
           <div class="hierarchy-node">
             ${toggle}
 
-            <span>
-              ${esc(member.name || key)}
-            </span>
+            <button type="button" class="hierarchy-member-link" data-member-id="${esc(key)}">${esc(member.name || key)}</button>
 
             <small>
               ${esc(key)}
@@ -282,7 +297,7 @@ async function verifySession() {
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Downline response:', result);
+      console.log('[HIERARCHY] Downline received:', result.success);
 
       if (!result.success) {
         throw new Error(
@@ -298,7 +313,7 @@ async function verifySession() {
         token: sessionToken
       });
 
-      console.log('[HIERARCHY] Self response:', own);
+      console.log('[HIERARCHY] Self received:', own.success);
 
       if (!own.success || !own.member) {
         throw new Error(
@@ -409,10 +424,9 @@ async function verifySession() {
     $('hierarchyTree').addEventListener(
       'click',
       event => {
-        const button = event.target.closest(
-          '[data-toggle]'
-        );
-
+        const memberButton = event.target.closest('[data-member-id]');
+        if (memberButton) { showDetail(memberButton.dataset.memberId); return; }
+        const button = event.target.closest('[data-toggle]');
         if (!button) return;
 
         const key = button.dataset.toggle;
@@ -427,6 +441,25 @@ async function verifySession() {
       }
     );
 
+    $('hierarchyRows').addEventListener('click', event => {
+      const button = event.target.closest('[data-member-id]');
+      if (button) showDetail(button.dataset.memberId);
+    });
+    $('hierarchyDetailClose').addEventListener('click', () => {
+      $('hierarchyDetail').hidden = true;
+    });
+    const tabs = [
+      ['hierarchyTabTree', 'hierarchyTreePanel'],
+      ['hierarchyTabList', 'hierarchyListPanel']
+    ];
+    function selectTab(selected) {
+      tabs.forEach(([tabId, panelId]) => {
+        const active = tabId === selected;
+        $(tabId).setAttribute('aria-selected', String(active));
+        $(panelId).hidden = !active;
+      });
+    }
+    tabs.forEach(([tabId]) => $(tabId).addEventListener('click', () => selectTab(tabId)));
     console.log('[HIERARCHY] Initialized');
   }
 
@@ -447,3 +480,15 @@ async function verifySession() {
     init();
   }
 })();
+
+
+// Session check before loading protected member data.
+document.addEventListener('DOMContentLoaded', async () => {
+  $('backToMember').addEventListener('click', () => { location.href = './index.html'; });
+  try {
+    if (await verifySession()) await window.Stage8Hierarchy.load();
+  } catch (error) {
+    console.error('[HIERARCHY] Session check failed:', error);
+    $('hierarchyMessage').textContent = '無法驗證登入狀態：' + (error.message || String(error));
+  }
+});

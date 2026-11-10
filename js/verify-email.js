@@ -1,2 +1,71 @@
+
+'use strict';
 import { CONFIG } from './config.js';
-(async()=>{const node=document.getElementById('status');const params=new URL(location.href).searchParams;const token=params.get('token');const endpoint=params.get('flow')==='invitation'?'/api/auth/invitations/verify-email':'/api/auth/email/verify';history.replaceState({},'',location.pathname);if(!token){node.textContent='缺少驗證資訊';return;}try{const res=await fetch(CONFIG.API_BASE+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token}),cache:'no-store'});const data=await res.json();node.textContent=res.ok&&data.success?'Email 驗證成功！如果是邀請註冊，現在可以使用 Email 與密碼登入。':'驗證失敗：'+(data.error||'UNKNOWN');}catch(e){node.textContent='無法連線驗證服務，請稍後再試。';}})();
+
+(async () => {
+  const status = document.getElementById('status');
+  const link = document.getElementById('returnLink');
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const flow = params.get('flow') || 'email';
+
+  const routes = {
+    email: '/api/auth/email/verify',
+    invitation: '/api/auth/invitations/verify-email',
+    customer_claim: '/api/auth/customer-claims/verify-email'
+  };
+
+  const success = {
+    email: 'Email 驗證成功！',
+    invitation: '邀請註冊完成！現在可以使用 Email 與密碼登入。',
+    customer_claim: '客戶帳號認領成功！現在可以使用 Email 與密碼登入。'
+  };
+
+  const errors = {
+    TOKEN_INVALID_OR_EXPIRED: '驗證連結無效或已過期。',
+    INVITE_INVALID_OR_EXPIRED: '邀請連結無效、已撤銷或已過期。',
+    CLAIM_INVALID_OR_EXPIRED: '認領連結無效、已撤銷或已過期。',
+    EMAIL_ALREADY_USED: '此 Email 已被其他帳號使用。',
+    REGISTRATION_CONFLICT: '帳號資料發生衝突，請聯絡服務直銷商。',
+    CLAIM_CONFLICT: '客戶帳號可能已被認領，請聯絡服務直銷商。'
+  };
+
+  // 移除網址中的一次性 Token，避免留在瀏覽器歷史紀錄。
+  window.history.replaceState(null, '', window.location.pathname);
+
+  if (!Object.prototype.hasOwnProperty.call(routes, flow)) {
+    status.textContent = '不支援的驗證流程。';
+    return;
+  }
+
+  if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+    status.textContent = '缺少有效的驗證資訊。';
+    return;
+  }
+
+  if (flow !== 'email' && link) {
+    link.href = './index.html';
+    link.textContent = '返回登入頁面';
+  }
+
+  try {
+    const res = await fetch(CONFIG.API_BASE + routes[flow], {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token }),
+      cache: 'no-store'
+    });
+
+    const data = await res.json();
+
+    status.textContent = res.ok && data.success
+      ? success[flow]
+      : '驗證失敗：' +
+        (errors[data.error] || data.error || '請稍後再試。');
+
+  } catch {
+    status.textContent = '無法連線驗證服務，請稍後再試。';
+  }
+})();

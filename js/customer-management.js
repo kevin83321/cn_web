@@ -179,6 +179,9 @@ import { CONFIG } from './config.js';
         request('/api/auth/me'), request('/api/auth/permissions')
       ]);
       state.actor = me.member || null;
+      console.log('[Phase 7] Actor:', state.actor);
+      console.log('[Phase 7] Status:', state.actor?.status);
+      console.log('[Phase 7] Permissions:', perms.permissions);
       const granted = Array.isArray(perms.permissions) ? perms.permissions : [];
       if (!granted.includes('customer.read') || state.actor?.role !== 'distributor') {
         $('permissionMessage').textContent = '目前帳號無權使用客戶服務管理。';

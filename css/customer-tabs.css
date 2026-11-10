@@ -9,3 +9,28 @@
 .customer-tab-panel .table-wrap{border:1px solid #e4eaf3;border-radius:12px}
 .customer-tab-panel #historyPanel{padding:18px;border:1px solid #e4eaf3;border-radius:12px}
 @media(max-width:720px){.customer-tabs{margin:18px 0}.customer-tab{font-size:15px}.customer-tab-panel .actions input{min-width:0;width:100%}.customer-tab-panel .card{padding:16px}}
+
+@media(max-width:720px){
+ #panel-query,.customer-tab-panel>section{min-width:0;max-width:100%}
+ #panel-query .actions{display:grid;grid-template-columns:1fr;gap:10px}
+ #panel-query .actions #reload{justify-self:start}
+ #panel-query .actions #search{width:100%;min-width:0}
+ #panel-query .table-wrap{overflow:visible;border:0}
+ #panel-query table{display:block;min-width:0;width:100%}
+ #panel-query thead{display:none}
+ #panel-query tbody{display:grid;gap:12px}
+ #panel-query tbody tr{display:flex;flex-direction:column;min-width:0;padding:14px;border:1px solid #dfe7f2;border-radius:14px;background:#fff}
+ #panel-query tbody td{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;width:100%;min-width:0;padding:8px 0;white-space:normal;overflow-wrap:anywhere;border:0;text-align:right;font-size:13px}
+ #panel-query tbody td::before{flex:0 0 80px;color:#64748b;font-weight:600;text-align:left}
+ #panel-query tbody td:nth-child(1)::before{content:'客戶姓名'}
+ #panel-query tbody td:nth-child(2)::before{content:'客戶 ID'}
+ #panel-query tbody td:nth-child(3)::before{content:'會員類型'}
+ #panel-query tbody td:nth-child(4)::before{content:'服務直銷商'}
+ #panel-query tbody td:nth-child(5)::before{content:'建立時間'}
+ #panel-query tbody td:nth-child(6)::before{content:'操作'}
+ #panel-query tbody td:first-child{font-weight:700;font-size:16px}
+ #panel-query tbody td:last-child{border-top:1px solid #e7edf5;margin-top:4px;padding-top:12px}
+ #panel-query .row-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;min-width:0}
+ #panel-query tbody tr:has(td[colspan]) td::before{content:none}
+ #historyPanel .table-wrap{overflow-x:auto;max-width:100%}
+}

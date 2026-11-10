@@ -59,7 +59,10 @@ import { CONFIG } from './config.js';
     if (items.some(m => m.member_id === selected)) select.value = selected;
   }
   function updateCurrentService() {
-    const customer = state.options.customers.find(m => m.member_id === $('customerId').value);
+    const id = $('customerId').value.trim();
+    const customer = state.options.customers.find(m => m.member_id === id)
+      || state.customers.find(r => r.customer?.member_id === id)?.customer;
+    $('customerInfo').textContent = customer ? `客戶：${labelOf(customer)}` : (id ? '將以輸入的會員 ID 查詢並操作' : '');
     $('currentService').textContent = customer?.current_distributor_id
       ? `目前服務：${customer.current_distributor_name || '未命名'} (${customer.current_distributor_id})`
       : '';
@@ -70,10 +73,8 @@ import { CONFIG } from './config.js';
     try {
       const result = await request('/api/customers/options?operation=' + encodeURIComponent(operation));
       state.options = { customers: result.customers || [], distributors: result.distributors || [] };
-      fillSelect('customerId', state.options.customers, '請選擇客戶');
       fillSelect('distributorId', state.options.distributors, '請選擇直銷商');
-      if (preselectCustomer && state.options.customers.some(m => m.member_id === preselectCustomer))
-        $('customerId').value = preselectCustomer;
+      if (preselectCustomer) $('customerId').value = preselectCustomer;
       updateCurrentService();
     } catch (error) {
       $('actionMessage').textContent = '載入可選會員失敗：' + explain(error);
@@ -157,7 +158,7 @@ import { CONFIG } from './config.js';
       $('actionMessage').textContent = '客戶與服務直銷商不能是同一人'; return;
     }
     const labels = { assign: '指派', transfer: '轉移', 'end-service': '結束' };
-    const customerLabel = labelOf(state.options.customers.find(m => m.member_id === customer) || { member_id: customer });
+    const customerLabel = labelOf(state.options.customers.find(m => m.member_id === customer) || state.customers.find(r => r.customer?.member_id === customer)?.customer || { member_id: customer });
     const distributorLabel = labelOf(state.options.distributors.find(m => m.member_id === distributor) || { member_id: distributor });
     const detail = operation === 'end-service'
       ? `確定結束客戶 ${customerLabel} 的服務關係？\n歷史紀錄會保留。`
@@ -237,7 +238,7 @@ import { CONFIG } from './config.js';
   }
 
   $('operation').addEventListener('change', async () => { updateOperation(); await loadOptions(); });
-  $('customerId').addEventListener('change', updateCurrentService);
+  $('customerId').addEventListener('input', updateCurrentService);
   $('manageForm').addEventListener('submit', submit);
   $('createForm').addEventListener('submit', createCustomer);
   $('reload').addEventListener('click', load);

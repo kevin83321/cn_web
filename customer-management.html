@@ -40,13 +40,14 @@
 <option value="end-service">結束服務</option>
 </select>
 </label>
-<label>客戶（姓名 / 會員 ID）
-          <select id="customerId" required><option value="">請先選擇客戶</option></select>
+<label>客戶會員 ID
+          <input id="customerId" required autocomplete="off" maxlength="100" placeholder="輸入會員 ID，或從上方查詢結果帶入">
 </label>
 <label id="distributorField">服務直銷商（姓名 / 會員 ID）
           <select id="distributorId"><option value="">請選擇服務直銷商</option></select>
 </label>
 </div>
+<p class="hint" id="customerInfo"></p>
 <p class="hint" id="currentService"></p>
 <p class="hint" id="operationHint">指派尚未有有效服務關係的客戶。</p>
 <button disabled="" id="submitAction" type="submit">確認指派</button>

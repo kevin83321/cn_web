@@ -100,6 +100,7 @@ import { CONFIG } from './config.js';
       $('inviteUrlText').textContent = inviteUrl;
       $('inviteResult').hidden = false;
       $('inviteLinkOutput').textContent = '邀請連結已產生。';
+      document.dispatchEvent(new Event('cn:invitation-created'));
       $('inviteShareMessage').textContent = '';
     } catch (error) {
       const labels = { CLAIM_ALREADY_PENDING:'此客戶已有尚未到期的認領邀請', CLAIM_UNAVAILABLE:'此客戶不符合認領條件或已建立登入帳號', OUTSIDE_MANAGEMENT_SCOPE:'此客戶不在你的管理範圍', FORBIDDEN:'目前帳號沒有建立邀請的權限', SITE_NOT_CONFIGURED:'網站網址尚未設定' };

@@ -16,3 +16,6 @@
 .audit-item dd{margin:0;overflow-wrap:anywhere}
 .audit-break{word-break:break-all}
 @media(max-width:600px){.audit-filters{grid-template-columns:1fr}.audit-actions button{flex:1}.audit-item{padding:14px}.audit-item dl>div{grid-template-columns:78px minmax(0,1fr)}}
+
+.audit-filters select{width:100%;min-width:0;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid #9ca3af;border-radius:4px;background:#fff;color:#152a48;font:inherit}
+.audit-filters select:disabled{opacity:.6}

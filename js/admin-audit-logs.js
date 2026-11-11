@@ -62,6 +62,27 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     }
   }
 
+  async function loadFilters() {
+    try {
+      const data = await api('/api/admin/audit-filters');
+      if (!Array.isArray(data.actors) || !Array.isArray(data.actions)) throw Error('INVALID_RESPONSE');
+      for (const [id, values] of [['actor', data.actors], ['action', data.actions]]) {
+        const select = $(id);
+        const previous = select.value;
+        select.replaceChildren(new Option(id === 'actor' ? '全部操作人員' : '全部操作類型', ''));
+        for (const value of values) {
+          if (typeof value === 'string' && value) select.add(new Option(value, value));
+        }
+        if ([...select.options].some(o => o.value === previous)) select.value = previous;
+      }
+    } catch (e) {
+      console.error('[AUDIT] Filter options failed', e);
+      $('filterHint').textContent = '無法載入下拉選項，請重新整理頁面：' + errorText(e);
+      $('actor').disabled = true;
+      $('action').disabled = true;
+    }
+  }
+
   async function init() {
     if (!getToken()) { location.replace('./index.html'); return; }
     $('filters').addEventListener('submit', e => {e.preventDefault(); if (state.loading || !state.authorized) return; state.page = 1; load();});
@@ -72,11 +93,11 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       const d = await api('/api/auth/permissions');
       if (!Array.isArray(d.permissions) || !d.permissions.includes(permission)) {
         $('message').textContent = '此帳號沒有操作紀錄查詢權限';
-        $('filters').querySelectorAll('input,button').forEach(el => {el.disabled = true;});
+        $('filters').querySelectorAll('select,button').forEach(el => {el.disabled = true;});
         return;
       }
       state.authorized = true;
-      await load();
+      await Promise.all([loadFilters(), load()]);
     } catch (e) {
       console.error('[AUDIT] Permission check failed', e);
       $('message').textContent = errorText(e);

@@ -1,84 +1,85 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-Hant">
-    <head><meta charset="utf-8">
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>登入與安全設定｜CN</title>
-        <link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
-        <link rel="stylesheet" href="./css/account-security.css">
-        <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-        <script defer src="./js/app-shell.js"></script>
-        <script src="./js/account-security.js" type="module"></script>
-        <script src="./js/email-settings.js" type="module"></script>
-      <link rel="stylesheet" href="./css/cn-polish.css">
-</head>
+<head><meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>登入與安全設定｜CN</title>
+<link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
+<link href="./css/account-security.css" rel="stylesheet"/>
+<link href="./css/cn-polish.css" rel="stylesheet"/>
+<script defer="" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script defer="" src="./js/app-shell.js"></script>
+<script defer="" src="./js/account-security.js"></script>
+<script defer="" src="./js/email-settings.js"></script>
+<link href="./css/account-tabs.css?v=20261111-98" rel="stylesheet"/><script defer="" src="./js/account-tabs.js?v=20261111-98"></script></head>
 <body data-page="security">
-    <div class="app-shell">
-        <header id="appHeader"></header>
-        <main class="security-main">
-            <h1>登入與安全設定</h1>
-            <p id="message" role="status" aria-live="polite">正在載入…</p>
-        <section class="panel">
-            <h2>登入方式</h2><dl>
-                <dt>帳號</dt>
-                <dd id="identifier">—</dd>
-                <dt>密碼登入</dt>
-                <dd id="passwordStatus">—</dd>
-                <dt>LINE 綁定</dt>
-                <dd id="lineStatus">—</dd></dl>
-                <div class="actions">
-                    <button type="button" id="bindLine">綁定 LINE</button>
-                    <button type="button" id="unbindLine" class="secondary">解除 LINE 綁定</button>
-                </div>
-                <p class="hint">LINE 綁定與解除綁定都需要目前的帳號密碼；解除綁定將撤銷其他裝置的 Session。</p>
-            </section>
-        <section class="panel">
-            <h2>Email 驗證</h2>
-            <p id="emailStatus" role="status">載入中…</p>
-            <form id="emailForm">
-                <label>Email 地址
-                    <input type="email" name="email" autocomplete="email" required maxlength="254" placeholder="name@example.com">
-                </label>
-                <button type="submit">寄送驗證信</button>
-                </form>
-                <p class="hint">驗證信有效期限為 15 分鐘；已驗證 Email 在新地址完成驗證前不會變更。</p>
-            </section>
-            <section class="panel">
-                <h2>修改登入密碼</h2>
-                <form id="passwordForm">
-                    <label>目前密碼
-                        <input name="current" type="password" autocomplete="current-password" required>
-                    </label>
-                    <label>新密碼
-                        <input name="next" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-                    </label>
-                    <label>確認新密碼
-                        <input name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-                    </label>
-                    <p class="hint">至少 12 字元，需包含英文大寫、小寫、數字與特殊符號。</p>
-                    <button type="submit">更新密碼</button>
-                </form>
-            </section>
-        <section class="panel">
-            <h2>登入裝置與 Session</h2>
-            <p class="hint">列出目前有效的登入工作階段，最後活動時間可能延遲約 5 分鐘。既有 Session 的裝置資訊可能顯示未知。</p>
-            <div class="actions">
-                <button type="button" id="refreshSessions" class="secondary">重新整理</button>
-                <button type="button" id="revokeOtherSessions">登出其他所有裝置</button>
-            </div>
-            <p id="sessionsMessage" role="status" aria-live="polite"></p>
-            <div id="sessionList" class="session-list"></div>
-        </section>
-        <section class="panel">
-            <h2>登入安全紀錄</h2>
-            <p class="hint">僅顯示自己的安全事件，包含登入成功、登入失敗、帳號鎖定、密碼變更與裝置登出。為保護隱私，不記錄密碼或登入 Token。既有登入事件不會回溯補齊。</p>
-            <div class="actions">
-                <button type="button" id="refreshSecurityEvents" class="secondary">重新整理紀錄</button>
-            </div>
-            <p id="securityEventsMessage" role="status" aria-live="polite"></p>
-        <div id="securityEventsList" class="security-events-list"></div>
-        </section>
-    </main>
-    <nav id="appFooter"></nav>
+<div class="app-shell">
+<header id="appHeader"></header>
+<main class="security-main">
+<h1>我的帳號</h1><nav aria-label="帳號設定分類" class="account-tabs" role="tablist"><button aria-controls="panel-account" aria-selected="true" class="account-tab" data-tab="account" id="tab-account" role="tab" tabindex="0" type="button">登入設定</button><button aria-controls="panel-security" aria-selected="false" class="account-tab" data-tab="security" id="tab-security" role="tab" tabindex="-1" type="button">密碼與裝置</button><button aria-controls="panel-history" aria-selected="false" class="account-tab" data-tab="history" id="tab-history" role="tab" tabindex="-1" type="button">安全紀錄</button></nav>
+<p aria-live="polite" id="message" role="status">正在載入…</p>
+<div aria-labelledby="tab-account" class="account-tab-panel" id="panel-account" role="tabpanel"><section class="panel">
+<h2>登入方式</h2><dl>
+<dt>帳號</dt>
+<dd id="identifier">—</dd>
+<dt>密碼登入</dt>
+<dd id="passwordStatus">—</dd>
+<dt>LINE 綁定</dt>
+<dd id="lineStatus">—</dd></dl>
+<div class="actions">
+<button id="bindLine" type="button">綁定 LINE</button>
+<button class="secondary" id="unbindLine" type="button">解除 LINE 綁定</button>
+</div>
+<p class="hint">LINE 綁定與解除綁定都需要目前的帳號密碼；解除綁定將撤銷其他裝置的 Session。</p>
+</section><section class="panel">
+<h2>Email 驗證</h2>
+<p id="emailStatus" role="status">載入中…</p>
+<form id="emailForm">
+<label>Email 地址
+                    <input autocomplete="email" maxlength="254" name="email" placeholder="name@example.com" required="" type="email"/>
+</label>
+<button type="submit">寄送驗證信</button>
+</form>
+<p class="hint">驗證信有效期限為 15 分鐘；已驗證 Email 在新地址完成驗證前不會變更。</p>
+</section></div>
+
+<div aria-labelledby="tab-security" class="account-tab-panel" hidden="" id="panel-security" role="tabpanel"><section class="panel">
+<h2>修改登入密碼</h2>
+<form id="passwordForm">
+<label>目前密碼
+                        <input autocomplete="current-password" name="current" required="" type="password"/>
+</label>
+<label>新密碼
+                        <input autocomplete="new-password" maxlength="128" minlength="12" name="next" required="" type="password"/>
+</label>
+<label>確認新密碼
+                        <input autocomplete="new-password" maxlength="128" minlength="12" name="confirm" required="" type="password"/>
+</label>
+<p class="hint">至少 12 字元，需包含英文大寫、小寫、數字與特殊符號。</p>
+<button type="submit">更新密碼</button>
+</form>
+</section><section class="panel">
+<h2>登入裝置與 Session</h2>
+<p class="hint">列出目前有效的登入工作階段，最後活動時間可能延遲約 5 分鐘。既有 Session 的裝置資訊可能顯示未知。</p>
+<div class="actions">
+<button class="secondary" id="refreshSessions" type="button">重新整理</button>
+<button id="revokeOtherSessions" type="button">登出其他所有裝置</button>
+</div>
+<p aria-live="polite" id="sessionsMessage" role="status"></p>
+<div class="session-list" id="sessionList"></div>
+</section></div>
+
+<div aria-labelledby="tab-history" class="account-tab-panel" hidden="" id="panel-history" role="tabpanel"><section class="panel">
+<h2>登入安全紀錄</h2>
+<p class="hint">僅顯示自己的安全事件，包含登入成功、登入失敗、帳號鎖定、密碼變更與裝置登出。為保護隱私，不記錄密碼或登入 Token。既有登入事件不會回溯補齊。</p>
+<div class="actions">
+<button class="secondary" id="refreshSecurityEvents" type="button">重新整理紀錄</button>
+</div>
+<p aria-live="polite" id="securityEventsMessage" role="status"></p>
+<div class="security-events-list" id="securityEventsList"></div>
+</section></div>
+</main>
+<nav id="appFooter"></nav>
 </div>
 </body>
 </html>

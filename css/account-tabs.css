@@ -1,0 +1,7 @@
+.account-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:18px 0 20px;padding:5px;background:#eaf0fa;border-radius:12px}
+.account-tab{min-width:0;border:0;border-radius:9px;padding:12px 5px;background:transparent;color:#4b6285;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.account-tab[aria-selected="true"]{background:#fff;color:#2458d6;box-shadow:0 1px 5px #1b3a691a}
+.account-tab:focus-visible{outline:3px solid #2458d6;outline-offset:2px}
+.account-tab-panel[hidden]{display:none!important}
+.account-tab-panel .panel{margin-bottom:16px}
+@media(max-width:380px){.account-tab{font-size:13px;padding:11px 2px}}

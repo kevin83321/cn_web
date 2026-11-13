@@ -85,7 +85,7 @@ import { CONFIG } from './config.js';
       return `邀請你認領 CN 既有客戶帳號。請透過以下連結設定 Email 與密碼並完成驗證：${inviteUrl}`;
     }
 
-    const roleName = createdInviteRole === 'distributor' ? '直銷商' : '非會員';
+    const roleName = createdInviteRole === 'distributor' ? '直銷商' : '一般會員';
 
     return `邀請你加入 CN 會員中心！受邀身分：${roleName}請透過以下連結完成註冊：${inviteUrl}`;
   }

@@ -8,7 +8,7 @@ import { CONFIG } from './config.js';
   const token = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   const label = { member: '新會員邀請', claim: '既有客戶認領' };
   const statusLabel = { pending: '等待使用', used: '已完成', revoked: '已撤銷', expired: '已過期' };
-  const roleLabel = {non_member: '一般會員', distributor: '直銷商'};
+  const roleLabel = {non_member: '一般會員', lifestyle: '生活會員', distributor: '直銷商'};
 
   function roleOf(item) {
     return item.type === 'claim' ? 'claim' : (item.invited_role || 'non_member');
@@ -16,17 +16,18 @@ import { CONFIG } from './config.js';
 
   function targetOf(item) {
     if (item.type === 'claim') {
-      return `${item.target_name || '未命名'} (${item.target_member_id || '—'})`;
+      return `${item.target_name || '未命名'} (${item.target_member_id || '—'}) 既有客戶認領（不變更身分）`;
     }
 
     const role = roleLabel[roleOf(item)] || '未知身分';
 
     if (item.target_member_id) {
-      return `${item.target_name || '未命名'} (${item.target_member_id})\n受邀身分：${role}`;
+      return `${item.target_name || '未命名'} (${item.target_member_id}) 受邀身分：${role}`;
     }
 
-    return `新會員（尚未註冊）\n受邀身分：${role}`;
+    return `新會員（尚未註冊）受邀身分：${role}`;
   }
+
   let rows = [];
 
   async function api(path, options = {}) {
@@ -79,7 +80,7 @@ import { CONFIG } from './config.js';
       const tr = document.createElement('tr');
       const values = [
         label[item.type] || item.type,
-        item.type === targetOf(item),
+        targetOf(item),
         statusLabel[item.status] || item.status,
         date(item.created_at),
         date(item.expires_at)

@@ -17,7 +17,7 @@ import { CONFIG } from './config.js';
       '邀請人：' + (data.inviter_name || 'CN 會員');
 
     const roleNames = {
-      non_member: '非會員',
+      non_member: '一般會員',
       lifestyle: '生活會員',
       distributor: '直銷商'
     };

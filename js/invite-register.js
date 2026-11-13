@@ -10,11 +10,34 @@ import { CONFIG } from './config.js';
     if(!r.ok||!data.success)throw Error(data.error||`HTTP_${r.status}`);
     return data;
   }
-  if(!/^[a-f0-9]{64}$/.test(invite)){msg('邀請連結無效，請向邀請人重新索取。');$('inviteForm').hidden=true;return;}
-  call('/api/auth/invitations/preview?invite='+encodeURIComponent(invite)).then(data=>{
-    $('inviter').textContent='邀請人：'+(data.inviter_name||'CN 會員');
-    $('inviteForm').hidden=false;
-  }).catch(()=>msg('邀請連結已過期或已使用，請向邀請人重新索取。'));
+  
+  call('/api/auth/invitations/preview?invite=' + encodeURIComponent(invite)).then(data => {
+
+    $('inviter').textContent =
+      '邀請人：' + (data.inviter_name || 'CN 會員');
+
+    const roleNames = {
+      non_member: '非會員',
+      lifestyle: '生活會員',
+      distributor: '直銷商'
+    };
+
+    const role = data.invited_role;
+
+    if (!Object.prototype.hasOwnProperty.call(roleNames, role)) {
+      throw Error('INVALID_INVITED_ROLE');
+    }
+
+    $('invitedRoleName').textContent = roleNames[role];
+    $('invitedRoleInfo').hidden = false;
+    $('inviteForm').hidden = false;
+
+  }).catch(() => {
+    msg('邀請連結無效、已過期或無法確認受邀身分，請向邀請人重新索取。');
+    $('invitedRoleInfo').hidden = true;
+    $('inviteForm').hidden = true;
+  });
+
   $('inviteForm').addEventListener('submit',async e=>{
     e.preventDefault();const btn=$('inviteSubmit');btn.disabled=true;
     try{

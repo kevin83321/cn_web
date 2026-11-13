@@ -3,6 +3,19 @@
 body{font-family:system-ui,sans-serif;background:#f6f8fc;color:#152b4c;margin:0;padding:20px}main{max-width:550px;margin:5vh auto;background:#fff;padding:28px;border-radius:16px;box-shadow:0 6px 25px #17305212}label{display:block;margin:16px 0;font-weight:600}input[type=text],input[type=search],select{display:block;width:100%;box-sizing:border-box;padding:12px;margin-top:8px;border:1px solid #b8c4d6;border-radius:8px;font:inherit}button{padding:12px 18px;border:0;border-radius:9px;background:#2458cb;color:white;font:inherit;cursor:pointer}button:disabled{opacity:.5}fieldset{border:1px solid #dbe4f1;border-radius:12px}fieldset label{font-weight:400}#inviteResult{margin-top:20px;padding:16px;border:1px solid #dbe4f1;border-radius:12px}#inviteUrlText{overflow-wrap:anywhere;background:#f6f8fc;padding:12px}#inviteLinkOutput,#inviteShareMessage{min-height:1.5em;line-height:1.5}button.secondary{background:#edf2fa;color:#2458cb}.actions{display:flex;flex-wrap:wrap;gap:8px}small{color:#64748b}.history-scroll{overflow-x:auto}.history-table{width:100%;border-collapse:collapse;min-width:690px;font-size:13px}.history-table th,.history-table td{padding:10px 8px;text-align:left;border-bottom:1px solid #e3e9f3}.history-table th{background:#f4f7fc}.history-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.history-tools select{width:auto;margin:0}[hidden]{display:none!important}
 </style><link rel="stylesheet" href="./css/invite-tabs.css?v=20261110-1"><script defer src="./js/app-shell.js?v=20261110-4"></script></head><body data-page="invites"><div class="app-shell"><header class="app-header" id="appHeader"></header><main class="invite-main app-main"><div class="app-intro"><span class="cn-eyebrow">MEMBER SERVICE</span><h1>邀請管理</h1><p>產生新邀請連結，或查詢與管理邀請紀錄。</p></div><div class="invite-tabs" role="tablist" aria-label="邀請管理"><button type="button" id="inviteTabCreate" class="invite-tab" role="tab" aria-controls="invitePanelCreate" aria-selected="true">產生新連結</button><button type="button" id="inviteTabHistory" class="invite-tab" role="tab" aria-controls="invitePanelHistory" aria-selected="false">紀錄管理</button></div><div id="invitePanelCreate" role="tabpanel" aria-labelledby="inviteTabCreate"><p>請選擇邀請類型，系統會產生對應的註冊或認領連結。</p><p>請選擇邀請類型，系統會產生對應的註冊或認領連結。</p>
 <fieldset><legend>邀請類型</legend><label><input type="radio" name="inviteType" value="member" checked> 邀請新會員（建立新會員資料）</label><label><input type="radio" name="inviteType" value="claim"> 邀請既有客戶（認領原有帳號）</label></fieldset>
+<section id="memberInviteFields">
+  <label for="invitedRole">
+    邀請會員身分
+    <select id="invitedRole">
+      <option value="non_member" selected>非會員</option>
+      <option value="lifestyle" selected>生活會員</option>
+      <option value="distributor">直銷商</option>
+    </select>
+  </label>
+  <small>
+    受邀者完成 Email 驗證後，系統將自動設定為所選身分。
+  </small>
+</section>
 <section id="claimFields" hidden><label for="customerId">選擇客戶<select id="customerId" required><option value="">請先選擇客戶</option></select></label><button id="reloadCustomers" type="button" class="secondary">重新載入客戶</button><p id="customerInfo" role="status" aria-live="polite"></p><small>只可替授權組織範圍內、尚未啟用登入的客戶建立認領邀請。</small></section>
 <button id="createInviteButton" type="button">產生邀請連結</button><p id="inviteLinkOutput" role="status"></p>
 <section id="inviteResult" hidden><h2>專屬邀請連結</h2><div id="inviteUrlText"></div><p><small>此連結包含一次性憑證，請只傳送給指定對象。</small></p><div class="actions"><button id="copyInviteButton" type="button">複製連結</button><button id="lineShareButton" type="button">LINE 分享</button><button id="nativeShareButton" class="secondary" type="button">其他分享</button><button id="copyInviteTextButton" class="secondary" type="button">複製邀請文字</button></div><p id="inviteShareMessage" role="status"></p></section>

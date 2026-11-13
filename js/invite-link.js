@@ -6,6 +6,7 @@ import { CONFIG } from './config.js';
   const getToken = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   let inviteUrl = '';
   let inviteType = 'member';
+  let createdInviteRole = 'non_member';
   let customersLoaded = false;
   let customersLoading = false;
   const params = new URLSearchParams(location.search);
@@ -13,12 +14,17 @@ import { CONFIG } from './config.js';
 
   function setType(type) {
     inviteType = type;
+
+    $('memberInviteFields').hidden = type !== 'member';
     $('claimFields').hidden = type !== 'claim';
+
     $('inviteResult').hidden = true;
     $('inviteLinkOutput').textContent = '';
     inviteUrl = '';
+
     if (type === 'claim') loadCustomers();
   }
+
   for (const radio of document.querySelectorAll('input[name="inviteType"]')) {
     radio.addEventListener('change', () => { if (radio.checked) setType(radio.value); });
   }
@@ -73,11 +79,17 @@ import { CONFIG } from './config.js';
     if (url.protocol !== 'https:' || url.origin !== location.origin) throw Error('邀請連結來源與目前網站不一致');
     return url.href;
   }
+  
   function message() {
-    return inviteType === 'claim'
-      ? `邀請你認領 CN 既有客戶帳號。\n請透過以下連結設定 Email 與密碼並完成驗證：\n${inviteUrl}`
-      : `邀請你加入 CN 會員中心！\n請透過以下連結完成註冊：\n${inviteUrl}`;
+    if (inviteType === 'claim') {
+      return `邀請你認領 CN 既有客戶帳號。請透過以下連結設定 Email 與密碼並完成驗證：${inviteUrl}`;
+    }
+
+    const roleName = createdInviteRole === 'distributor' ? '直銷商' : '非會員';
+
+    return `邀請你加入 CN 會員中心！受邀身分：${roleName}請透過以下連結完成註冊：${inviteUrl}`;
   }
+
   async function copy(value) {
     if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(value);
     const input = document.createElement('textarea');
@@ -93,9 +105,26 @@ import { CONFIG } from './config.js';
     try {
       const id = $('customerId').value.trim();
       if (inviteType === 'claim' && !id) throw Error('請先選擇客戶');
+      
+      const selectedRole = $('invitedRole').value;
+
+      if (inviteType === 'member' &&
+          !['non_member', 'distributor'].includes(selectedRole)) {
+        throw Error('請選擇有效的邀請身分');
+      }
+
       const data = inviteType === 'claim'
-        ? await api('/api/auth/customer-claims', { customer_member_id: id })
-        : await api('/api/auth/invitations');
+        ? await api('/api/auth/customer-claims', {
+            customer_member_id: id
+          })
+        : await api('/api/auth/invitations', {
+            role: selectedRole
+          });
+
+      if (inviteType === 'member') {
+        createdInviteRole = data.invited_role || selectedRole;
+      }
+
       inviteUrl = checkedUrl(data.url);
       $('inviteUrlText').textContent = inviteUrl;
       $('inviteResult').hidden = false;

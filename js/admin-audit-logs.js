@@ -6,6 +6,13 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
   const permission = 'admin.audit.read';
   const errorText = e => errors[e?.message] || `查詢失敗：${e?.message || 'UNKNOWN_ERROR'}`;
   const value = v => v == null || v === '' ? '—' : String(v);
+  const categoryNames = {
+    customer: '客戶服務',
+    member: '會員管理',
+    permission: '角色權限',
+    security: '帳號安全',
+    other: '其他'
+  };
   const formatTime = raw => {
     if (!raw) return '—';
 
@@ -56,12 +63,8 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         <div class="admin-item-head">
           <strong>${esc(value(r.title || r.action))}</strong>
           <span class="admin-pill">
-            ${esc(value(r.category || 'other'))}
+            ${esc(categoryNames[r.category] || '其他')}
           </span>
-        </div>
-
-        <div class="audit-action-code">
-          ${esc(value(r.action))}
         </div>
 
         <p class="audit-summary">

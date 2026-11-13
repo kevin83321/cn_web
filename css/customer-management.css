@@ -27,6 +27,62 @@ th{background:#f1f5f9}
 [hidden]{display:none!important}
 @media(max-width:720px){.wrap{padding:18px}.form-grid{grid-template-columns:1fr}}
 
+
+.audit-action-code {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.audit-summary {
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.audit-changes {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.audit-change {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+
+.audit-change-label {
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.audit-change-values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.audit-no-change {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.audit-details {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.audit-details summary {
+  cursor: pointer;
+  color: #64748b;
+}
+
 /* Keep shared shell header horizontal on all screen sizes. */
 #appHeader{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:nowrap}
 #appHeader .header-heading{min-width:0}

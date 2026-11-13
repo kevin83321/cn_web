@@ -71,27 +71,6 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
           ${esc(value(r.summary))}
         </p>
 
-        <dl>
-          <div>
-            <dt>操作人員</dt>
-            <dd class="audit-break">
-              ${esc(value(r.actor_member_id))}
-            </dd>
-          </div>
-
-          <div>
-            <dt>操作對象</dt>
-            <dd class="audit-break">
-              ${esc(value(r.target_member_id))}
-            </dd>
-          </div>
-
-          <div>
-            <dt>操作時間</dt>
-            <dd>${esc(formatTime(r.created_at))}</dd>
-          </div>
-        </dl>
-
         <div class="audit-changes">
           <strong>變更內容</strong>
           ${changeHtml}
@@ -100,6 +79,24 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         <details class="audit-details">
           <summary>技術資訊</summary>
           <dl>
+            <div>
+              <dt>操作人員</dt>
+              <dd class="audit-break">
+                ${esc(value(r.actor_member_id))}
+              </dd>
+            </div>
+
+            <div>
+              <dt>操作對象</dt>
+              <dd class="audit-break">
+                ${esc(value(r.target_member_id))}
+              </dd>
+            </div>
+
+            <div>
+              <dt>操作時間</dt>
+              <dd>${esc(formatTime(r.created_at))}</dd>
+            </div>
             <div>
               <dt>事件 ID</dt>
               <dd class="audit-break">

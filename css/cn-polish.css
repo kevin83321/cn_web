@@ -9,6 +9,79 @@
 .feature-icon { display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:#edf4ff; color:#2855a5; font-size:1.3rem; }
 .cn-security-link { display:flex; align-items:center; justify-content:space-between; margin:16px 0; padding:17px 18px; border:1px solid #dce7fa; border-radius:16px; background:#f4f8ff; color:#214ec9; text-decoration:none; font-weight:700; }
 .cn-security-link:hover { background:#eaf2ff; }
+
+/* 首頁會員資訊整合 - D7A UI */
+
+#dashboardView .member-summary {
+  display: block;
+  margin-bottom: 24px;
+}
+
+#dashboardView .member-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+#dashboardView .member-summary-info {
+  flex: 1;
+  min-width: 0;
+}
+
+#dashboardView .member-summary-info h1 {
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+
+#dashboardView .member-summary-info #memberId {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+#dashboardView .member-summary-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+#dashboardView .member-summary-meta .badge {
+  margin: 0;
+}
+
+#dashboardView .member-summary-meta .card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#dashboardView .member-summary-meta .card-status i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+@media (max-width: 360px) {
+  #dashboardView .member-summary-row {
+    gap: 10px;
+  }
+
+  #dashboardView .member-summary-info h1 {
+    font-size: 22px;
+  }
+}
 @media (min-width:720px) { .feature-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } }
 @media (max-width:360px) { .feature-grid { grid-template-columns:1fr; } }
 @media (prefers-reduced-motion:reduce) { .feature-card { transition:none; } }

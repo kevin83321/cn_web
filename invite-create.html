@@ -19,5 +19,30 @@ body{font-family:system-ui,sans-serif;background:#f6f8fc;color:#152b4c;margin:0;
 <section id="claimFields" hidden><label for="customerId">選擇客戶<select id="customerId" required><option value="">請先選擇客戶</option></select></label><button id="reloadCustomers" type="button" class="secondary">重新載入客戶</button><p id="customerInfo" role="status" aria-live="polite"></p><small>只可替授權組織範圍內、尚未啟用登入的客戶建立認領邀請。</small></section>
 <button id="createInviteButton" type="button">產生邀請連結</button><p id="inviteLinkOutput" role="status"></p>
 <section id="inviteResult" hidden><h2>專屬邀請連結</h2><div id="inviteUrlText"></div><p><small>此連結包含一次性憑證，請只傳送給指定對象。</small></p><div class="actions"><button id="copyInviteButton" type="button">複製連結</button><button id="lineShareButton" type="button">LINE 分享</button><button id="nativeShareButton" class="secondary" type="button">其他分享</button><button id="copyInviteTextButton" class="secondary" type="button">複製邀請文字</button></div><p id="inviteShareMessage" role="status"></p></section>
-</div><div id="invitePanelHistory" role="tabpanel" aria-labelledby="inviteTabHistory" hidden><section id="invitationHistory" aria-labelledby="historyHeading"><h2 id="historyHeading">邀請紀錄管理</h2><p><small>僅顯示自己建立的邀請；不會重新顯示已產生的邀請連結。</small></p><div class="history-tools"><button type="button" class="secondary" id="reloadHistory">重新載入紀錄</button><label class="history-filter-label" for="historyTypeFilter">邀請類型<select id="historyTypeFilter"><option value="all">全部類型</option><option value="member">新會員邀請</option><option value="claim">既有客戶認領</option></select></label><label class="history-filter-label" for="historyFilter">邀請狀態<select id="historyFilter" aria-label="篩選邀請狀態"><option value="all">全部狀態</option><option value="pending">等待使用</option><option value="used">已完成</option><option value="revoked">已撤銷</option><option value="expired">已過期</option></select></label></div><div id="historySummary" class="history-summary" aria-label="邀請狀態統計"></div><p id="historyMessage" role="status"></p><p id="historyCount"></p><div class="history-scroll"><table class="history-table"><thead><tr><th>類型</th><th>邀請對象</th><th>狀態</th><th>建立時間</th><th>到期時間</th><th>操作</th></tr></thead><tbody id="historyRows"></tbody></table></div></section>
+</div><div id="invitePanelHistory" role="tabpanel" aria-labelledby="inviteTabHistory" hidden><section id="invitationHistory" aria-labelledby="historyHeading"><h2 id="historyHeading">邀請紀錄管理</h2><p><small>僅顯示自己建立的邀請；不會重新顯示已產生的邀請連結。</small></p><div class="history-tools"><button type="button" class="secondary" id="reloadHistory">重新載入紀錄</button>
+    <label class="history-filter-label" for="historyTypeFilter">邀請類型
+        <select id="historyTypeFilter">
+            <option value="all">全部類型</option>
+            <option value="member">新會員邀請</option>
+            <option value="claim">既有客戶認領</option>
+        </select>
+    </label>
+    <label class="history-filter-label" for="historyFilter">邀請狀態
+        <select id="historyFilter" aria-label="篩選邀請狀態">
+            <option value="all">全部狀態</option>
+            <option value="pending">等待使用</option>
+            <option value="used">已完成</option>
+            <option value="revoked">已撤銷</option>
+            <option value="expired">已過期</option>
+        </select>
+    </label>
+    <label class="history-filter-label" for="historyRoleFilter">受邀身分
+        <select id="historyRoleFilter">
+            <option value="all">全部身分</option>
+            <option value="non_member">一般會員</option>
+            <option value="distributor">直銷商</option>
+            <option value="claim">既有客戶認領</option>
+        </select>
+    </label>
+</div><div id="historySummary" class="history-summary" aria-label="邀請狀態統計"></div><p id="historyMessage" role="status"></p><p id="historyCount"></p><div class="history-scroll"><table class="history-table"><thead><tr><th>類型</th><th>邀請對象</th><th>狀態</th><th>建立時間</th><th>到期時間</th><th>操作</th></tr></thead><tbody id="historyRows"></tbody></table></div></section>
 </div></main><nav id="appFooter" class="bottom-nav" aria-label="主要導覽"></nav></div><script type="module" src="./js/invite-tabs.js"></script><script type="module" src="./js/invite-link.js"></script><script type="module" src="./js/invitation-history.js"></script></body></html>

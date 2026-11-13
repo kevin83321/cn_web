@@ -8,6 +8,25 @@ import { CONFIG } from './config.js';
   const token = () => localStorage.getItem(CONFIG.TOKEN_KEY) || sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
   const label = { member: '新會員邀請', claim: '既有客戶認領' };
   const statusLabel = { pending: '等待使用', used: '已完成', revoked: '已撤銷', expired: '已過期' };
+  const roleLabel = {non_member: '一般會員', distributor: '直銷商'};
+
+  function roleOf(item) {
+    return item.type === 'claim' ? 'claim' : (item.invited_role || 'non_member');
+  }
+
+  function targetOf(item) {
+    if (item.type === 'claim') {
+      return `${item.target_name || '未命名'} (${item.target_member_id || '—'})`;
+    }
+
+    const role = roleLabel[roleOf(item)] || '未知身分';
+
+    if (item.target_member_id) {
+      return `${item.target_name || '未命名'} (${item.target_member_id})\n受邀身分：${role}`;
+    }
+
+    return `新會員（尚未註冊）\n受邀身分：${role}`;
+  }
   let rows = [];
 
   async function api(path, options = {}) {
@@ -35,11 +54,20 @@ import { CONFIG } from './config.js';
   function render() {
     const filter = $('historyFilter').value;
     const type = $('historyTypeFilter').value;
-    const list = rows.filter(row => (filter === 'all' || row.status === filter) && (type === 'all' || row.type === type));
+    const role = $('historyRoleFilter').value;
+
+    const matches = row =>
+      (type === 'all' || row.type === type) &&
+      (role === 'all' || roleOf(row) === role);
+
+    const list = rows.filter(row =>
+      matches(row) &&
+      (filter === 'all' || row.status === filter)
+    );
     const summary = $('historySummary');
     summary.replaceChildren();
     for (const [key, title] of [['all', '全部'], ['pending', '等待使用'], ['used', '已完成'], ['revoked', '已撤銷'], ['expired', '已過期']]) {
-      const count = rows.filter(row => (type === 'all' || row.type === type) && (key === 'all' || row.status === key)).length;
+      const count = rows.filter(row => matches(row) && (key === 'all' || row.status === key)).length;
       const pill = document.createElement('span');
       pill.className = 'history-stat';
       pill.textContent = `${title} ${count}`;
@@ -51,7 +79,7 @@ import { CONFIG } from './config.js';
       const tr = document.createElement('tr');
       const values = [
         label[item.type] || item.type,
-        item.type === 'claim' ? `${item.target_name || '未命名'} (${item.target_member_id || '—'})` : '新會員（尚未註冊）',
+        item.type === targetOf(item),
         statusLabel[item.status] || item.status,
         date(item.created_at),
         date(item.expires_at)
@@ -59,6 +87,9 @@ import { CONFIG } from './config.js';
       const headings = ['類型', '邀請對象', '狀態', '建立時間', '到期時間'];
       values.forEach((value, index) => {
         const td = cell(value);
+        if (index === 1) {
+          td.style.whiteSpace = 'pre-line';
+        }
         td.dataset.label = headings[index];
         if (index === 2) td.dataset.status = item.status;
         tr.append(td);
@@ -115,6 +146,7 @@ import { CONFIG } from './config.js';
   $('reloadHistory').addEventListener('click', load);
   $('historyFilter').addEventListener('change', render);
   $('historyTypeFilter').addEventListener('change', render);
+  $('historyRoleFilter').addEventListener('change', render);
   // Newly generated invitations should appear in history without another page load.
   document.addEventListener('cn:invitation-created', load);
   load();

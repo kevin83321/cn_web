@@ -16,8 +16,8 @@ import { CONFIG } from './config.js';
     if (reason !== 'FORBIDDEN') {
       localStorage.removeItem(CONFIG.TOKEN_KEY);
       sessionStorage.removeItem(CONFIG.TOKEN_KEY);
-      // Prevent automatic LINE sign-in immediately after a revoked session.
-      localStorage.setItem(CONFIG.MANUAL_LOGOUT_KEY, '1');
+      // Session expiry is not a user-initiated logout.
+      // Preserve MANUAL_LOGOUT_KEY only when the user explicitly logged out.
     }
     location.replace(home(reason));
   }
@@ -30,7 +30,25 @@ import { CONFIG } from './config.js';
   window.fetch = async function(input, init) {
     const res = await originalFetch(input, init);
     if (!isApiRequest(input)) return res;
-    if (res.status === 401) redirect('SESSION_EXPIRED');
+    // A 401 from an unrelated login/verification endpoint must not
+    // invalidate the currently authenticated CN session.
+    if (res.status === 401) {
+      const requestHeaders = new Headers(
+        input instanceof Request ? input.headers : undefined
+      );
+      if (init && init.headers) {
+        new Headers(init.headers).forEach((value, key) => requestHeaders.set(key, value));
+      }
+      const authorization = requestHeaders.get('Authorization') || '';
+      const activeToken = localStorage.getItem(CONFIG.TOKEN_KEY) ||
+        sessionStorage.getItem(CONFIG.TOKEN_KEY) || '';
+      if (activeToken && authorization === 'Bearer ' + activeToken) {
+        const body = await res.clone().json().catch(() => ({}));
+        if (body.error === 'UNAUTHORIZED' || body.error === 'SESSION_EXPIRED') {
+          redirect('SESSION_EXPIRED');
+        }
+      }
+    }
     else if (res.status === 403) {
       const body = await res.clone().json().catch(() => ({}));
       if (body.error === 'MEMBER_INACTIVE') redirect('MEMBER_INACTIVE');

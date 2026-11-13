@@ -830,32 +830,18 @@ import { CONFIG } from './config.js';
         new URLSearchParams(location.search)
           .get('auth_error');
 
-      if (
-        reason === 'SESSION_EXPIRED' ||
-        reason === 'MEMBER_INACTIVE'
-      ) {
+      if (reason === 'SESSION_EXPIRED' || reason === 'MEMBER_INACTIVE') {
         clearSession();
+        history.replaceState(null, '', location.pathname + location.hash);
 
-        localStorage.setItem(
-          CONFIG.MANUAL_LOGOUT_KEY,
-          '1'
-        );
-
-        history.replaceState(
-          null,
-          '',
-          location.pathname + location.hash
-        );
-
-        show('guestView');
-
-        alert(
-          reason === 'MEMBER_INACTIVE'
-            ? '帳號已停用，請聯絡管理員。'
-            : '登入已失效，請重新登入。'
-        );
-
-        return;
+        if (reason === 'MEMBER_INACTIVE') {
+          // Do not silently sign in again when the account is disabled.
+          show('guestView');
+          alert('帳號已停用，請聯絡管理員。');
+          return;
+        }
+        // Expired CN session: continue below to attempt LIFF sign-in,
+        // unless the user explicitly logged out earlier.
       }
 
       // A. Restore existing session
@@ -864,17 +850,19 @@ import { CONFIG } from './config.js';
           await enterDashboard();
           return;
         } catch (error) {
-          if (
-            error.status !== 401 &&
-            error.status !== 403
-          ) {
+          // Only an invalid CN session should trigger automatic re-login.
+          // Permission failures and other 403 responses are not session expiry.
+          if (error.status === 403 && error.message === 'MEMBER_INACTIVE') {
+            clearSession();
+            show('guestView');
+            alert('帳號已停用，請聯絡管理員。');
+            return;
+          }
+          if (error.status !== 401) {
             throw error;
           }
 
-          console.warn(
-            '[AUTH] Session expired'
-          );
-
+          console.warn('[AUTH] Session expired');
           clearSession();
         }
       }

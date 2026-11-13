@@ -96,7 +96,6 @@ window.CNAuthGuardReady = (() => {
 
         <div class="header-heading">
           <strong>${title[0]}</strong>
-          <small>${title[1]}</small>
         </div>
 
         <span class="header-mark">CN</span>

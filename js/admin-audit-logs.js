@@ -40,8 +40,23 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     return p.toString();
   }
   
+  
   function itemCard(r) {
     const changes = Array.isArray(r.changes) ? r.changes : [];
+
+    // 名稱與 ID 統一顯示
+    function memberLabel(name, id) {
+      const memberName = name ? String(name).trim() : '';
+      const memberId = id ? String(id).trim() : '';
+
+      if (memberName && memberId) {
+        return `${memberName} (${memberId})`;
+      }
+      return memberName || memberId || '—';
+    }
+
+    const actor = memberLabel(r.actor_name, r.actor_member_id);
+    const target = memberLabel(r.target_name, r.target_member_id);
 
     const changeHtml = changes.length
       ? changes.map(c => `
@@ -51,7 +66,7 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
             </div>
             <div class="audit-change-values">
               <span>${esc(value(c.before))}</span>
-              <span aria-hidden="true">→</span>
+              <span class="audit-change-arrow" aria-hidden="true">→</span>
               <strong>${esc(value(c.after))}</strong>
             </div>
           </div>
@@ -60,8 +75,15 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
 
     return `
       <article class="admin-item audit-item">
+
         <div class="admin-item-head">
-          <strong>${esc(value(r.title || r.action))}</strong>
+          <div class="audit-heading">
+            <strong>${esc(value(r.title || r.action))}</strong>
+            <time class="audit-time">
+              ${esc(formatTime(r.created_at))}
+            </time>
+          </div>
+
           <span class="admin-pill">
             ${esc(categoryNames[r.category] || '其他')}
           </span>
@@ -71,8 +93,24 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
           ${esc(value(r.summary))}
         </p>
 
+        <div class="audit-members">
+          <div class="audit-member">
+            <span class="audit-member-label">操作人員</span>
+            <strong class="audit-member-value">
+              ${esc(actor)}
+            </strong>
+          </div>
+
+          <div class="audit-member">
+            <span class="audit-member-label">操作對象</span>
+            <strong class="audit-member-value">
+              ${esc(target)}
+            </strong>
+          </div>
+        </div>
+
         <div class="audit-changes">
-          <strong>變更內容</strong>
+          <strong class="audit-section-title">變更內容</strong>
           ${changeHtml}
         </div>
 
@@ -80,29 +118,12 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
           <summary>技術資訊</summary>
           <dl>
             <div>
-              <dt>操作人員</dt>
-              <dd class="audit-break">
-                ${esc(value(r.actor_member_id))}
-              </dd>
-            </div>
-
-            <div>
-              <dt>操作對象</dt>
-              <dd class="audit-break">
-                ${esc(value(r.target_member_id))}
-              </dd>
-            </div>
-
-            <div>
-              <dt>操作時間</dt>
-              <dd>${esc(formatTime(r.created_at))}</dd>
-            </div>
-            <div>
               <dt>事件 ID</dt>
               <dd class="audit-break">
                 ${esc(value(r.audit_id))}
               </dd>
             </div>
+
             <div>
               <dt>事件代碼</dt>
               <dd class="audit-break">
@@ -111,8 +132,11 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
             </div>
           </dl>
         </details>
-      </article>`;
+
+      </article>
+    `;
   }
+
 
 
   function pager() {

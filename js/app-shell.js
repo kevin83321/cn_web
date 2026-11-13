@@ -70,7 +70,6 @@ window.CNAuthGuardReady = (() => {
 
           <div>
             <strong>CN 會員中心</strong>
-            <small>Member Portal</small>
           </div>
         </div>
 

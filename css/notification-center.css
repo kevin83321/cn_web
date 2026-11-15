@@ -153,3 +153,44 @@
     font-size: 18px;
   }
 }
+
+
+/* Header bell / collapsible notification panel */
+.notification-bell {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 20px;
+}
+.notification-bell-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #d93043;
+  color: #fff;
+  font-size: 10px;
+  line-height: 19px;
+  font-weight: 700;
+  text-align: center;
+}
+.notification-center {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 22px #182b4a08;
+}
+.notification-center[hidden], .notification-bell[hidden], .notification-bell-count[hidden] {
+  display: none !important;
+}

@@ -73,6 +73,11 @@ window.CNAuthGuardReady = (() => {
           </div>
         </div>
 
+        <button id="notificationBell" class="notification-bell" type="button" aria-label="開啟通知中心" aria-controls="notificationCenter" aria-expanded="false" hidden>
+          <span aria-hidden="true">🔔</span>
+          <span id="notificationBellCount" class="notification-bell-count" hidden></span>
+        </button>
+
         <button
           id="profileButton"
           type="button"

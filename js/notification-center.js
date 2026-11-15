@@ -14,6 +14,38 @@ import { CONFIG } from './config.js';
   const count = $('notificationCount');
   const reload = $('reloadNotifications');
   const unreadOnly = $('notificationUnreadOnly');
+  const bell = $('notificationBell');
+  const bellCount = $('notificationBellCount');
+  const dashboard = $('dashboardView');
+  const account = $('accountView');
+  let initialized = false;
+
+  function isLoggedInView() {
+    return Boolean(dashboard && !dashboard.hidden) || Boolean(account && !account.hidden);
+  }
+
+  function closePanel() {
+    root.hidden = true;
+    bell?.setAttribute('aria-expanded', 'false');
+  }
+
+  function syncVisibility() {
+    const loggedIn = isLoggedInView() && Boolean(token());
+    if (bell) bell.hidden = !loggedIn;
+    if (!loggedIn) {
+      closePanel();
+      initialized = false;
+      notifications = [];
+      if (bellCount) bellCount.hidden = true;
+      return;
+    }
+    if (!initialized) {
+      initialized = true;
+      loadUnreadCount().catch(() => {
+        initialized = false;
+      });
+    }
+  }
 
   let notifications = [];
   let loading = false;
@@ -163,6 +195,11 @@ import { CONFIG } from './config.js';
     count.textContent = `${unread} 則未讀`;
 
     count.hidden = unread === 0;
+    if (bellCount) {
+      bellCount.textContent = unread > 99 ? '99+' : String(unread);
+      bellCount.hidden = unread === 0;
+      bell?.setAttribute('aria-label', unread ? `通知中心，${unread} 則未讀` : '開啟通知中心');
+    }
 
     // Other UI elements may listen for this event.
     document.dispatchEvent(
@@ -236,5 +273,24 @@ import { CONFIG } from './config.js';
     load
   );
 
-  load();
+  bell?.addEventListener('click', () => {
+    if (!isLoggedInView() || !token()) return;
+    const opening = root.hidden;
+    root.hidden = !opening;
+    bell.setAttribute('aria-expanded', String(opening));
+    if (opening) load();
+  });
+
+  document.addEventListener('click', event => {
+    if (!root.hidden && !root.contains(event.target) && !bell?.contains(event.target)) {
+      closePanel();
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closePanel();
+  });
+  if (dashboard) new MutationObserver(syncVisibility).observe(dashboard, {attributes:true, attributeFilter:['hidden']});
+  if (account) new MutationObserver(syncVisibility).observe(account, {attributes:true, attributeFilter:['hidden']});
+  window.addEventListener('pageshow', syncVisibility);
+  syncVisibility();
 })();

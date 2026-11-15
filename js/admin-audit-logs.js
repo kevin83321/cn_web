@@ -40,7 +40,6 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     return p.toString();
   }
   
-  
   function itemCard(r) {
     const changes = Array.isArray(r.changes) ? r.changes : [];
 

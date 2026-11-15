@@ -16,6 +16,9 @@ import { CONFIG } from './config.js';
   const unreadOnly = $('notificationUnreadOnly');
   const bell = $('notificationBell');
   const bellCount = $('notificationBellCount');
+  const backdrop = $('notificationBackdrop');
+  const closeButton = $('closeNotifications');
+  let previousFocus = null;
   const dashboard = $('dashboardView');
   const account = $('accountView');
   let initialized = false;
@@ -25,8 +28,13 @@ import { CONFIG } from './config.js';
   }
 
   function closePanel() {
+    if (root.hidden) return;
     root.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+    document.body.classList.remove('notification-open');
     bell?.setAttribute('aria-expanded', 'false');
+    if (previousFocus?.isConnected && !previousFocus.hidden) previousFocus.focus();
+    previousFocus = null;
   }
 
   function syncVisibility() {
@@ -276,18 +284,33 @@ import { CONFIG } from './config.js';
   bell?.addEventListener('click', () => {
     if (!isLoggedInView() || !token()) return;
     const opening = root.hidden;
-    root.hidden = !opening;
-    bell.setAttribute('aria-expanded', String(opening));
-    if (opening) load();
+    if (!opening) { closePanel(); return; }
+    previousFocus = document.activeElement;
+    root.hidden = false;
+    if (backdrop) backdrop.hidden = false;
+    document.body.classList.add('notification-open');
+    bell.setAttribute('aria-expanded', 'true');
+    closeButton?.focus();
+    load();
   });
 
+  closeButton?.addEventListener('click', closePanel);
+  backdrop?.addEventListener('click', closePanel);
   document.addEventListener('click', event => {
     if (!root.hidden && !root.contains(event.target) && !bell?.contains(event.target)) {
       closePanel();
     }
   });
   document.addEventListener('keydown', event => {
+    if (root.hidden) return;
     if (event.key === 'Escape') closePanel();
+    if (event.key === 'Tab') {
+      const focusables = [...root.querySelectorAll('button:not([disabled]), input:not([disabled])')].filter(el => !el.hidden);
+      if (!focusables.length) { event.preventDefault(); root.focus(); return; }
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === root)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
   });
   if (dashboard) new MutationObserver(syncVisibility).observe(dashboard, {attributes:true, attributeFilter:['hidden']});
   if (account) new MutationObserver(syncVisibility).observe(account, {attributes:true, attributeFilter:['hidden']});

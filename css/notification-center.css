@@ -194,3 +194,44 @@
 .notification-center[hidden], .notification-bell[hidden], .notification-bell-count[hidden] {
   display: none !important;
 }
+
+/* Floating dialog: never occupies homepage document flow */
+.notification-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  background: rgba(15, 23, 42, .42);
+}
+.notification-backdrop[hidden] { display: none !important; }
+body.notification-open { overflow: hidden; }
+.notification-center {
+  position: fixed;
+  z-index: 1100;
+  top: max(88px, calc(env(safe-area-inset-top, 0px) + 16px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, calc(100vw - 32px));
+  max-height: min(72dvh, 680px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  box-shadow: 0 22px 70px rgba(15,23,42,.25);
+}
+.notification-header-actions { display: flex; align-items: center; gap: 8px; }
+.notification-close {
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+}
+@media (max-width: 540px) {
+  .notification-center {
+    top: max(12px, env(safe-area-inset-top, 0px));
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    border-radius: 18px;
+    padding: 16px;
+  }
+}

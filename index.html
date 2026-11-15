@@ -118,14 +118,21 @@
       </div>
       <button id="logoutButton" class="logout-button" type="button">登出會員帳號</button>
     </section>
+    <!-- Floating notification dialog -->
+    <div id="notificationBackdrop" class="notification-backdrop" hidden></div>
     <!-- Notification -->
     <section
       id="notificationCenter"
       class="notification-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notificationTitle"
+      tabindex="-1"
+      hidden
     >
       <div class="notification-header">
         <div class="notification-heading">
-          <h2>通知中心</h2>
+          <h2 id="notificationTitle">通知中心</h2>
 
           <span
             id="notificationCount"
@@ -134,6 +141,7 @@
           ></span>
         </div>
 
+        <div class="notification-header-actions">
         <button
           id="reloadNotifications"
           type="button"
@@ -141,6 +149,8 @@
         >
           重新整理
         </button>
+        <button id="closeNotifications" class="notification-close" type="button" aria-label="關閉通知中心">✕</button>
+        </div>
       </div>
 
       <div class="notification-toolbar">

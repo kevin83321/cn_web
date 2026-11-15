@@ -8,12 +8,13 @@
   <title>CN 會員中心</title>
 
   <link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
-
+  <link rel="stylesheet" href="./css/notification-center.css">
   <link rel="stylesheet" href="./css/index.css">
   <link rel="stylesheet" href="./css/app-shell.css">
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="./js/app-shell.js" defer></script>
+  <script type="module" src="./js/notification-center.js"></script>
   <script src="./js/index.js" type="module"></script>
   <link rel="stylesheet" href="./css/cn-polish.css">
 </head>
@@ -117,6 +118,54 @@
       </div>
       <button id="logoutButton" class="logout-button" type="button">登出會員帳號</button>
     </section>
+    <!-- Notification -->
+    <section
+      id="notificationCenter"
+      class="notification-center"
+    >
+      <div class="notification-header">
+        <div class="notification-heading">
+          <h2>通知中心</h2>
+
+          <span
+            id="notificationCount"
+            class="notification-count"
+            hidden
+          ></span>
+        </div>
+
+        <button
+          id="reloadNotifications"
+          type="button"
+          class="secondary"
+        >
+          重新整理
+        </button>
+      </div>
+
+      <div class="notification-toolbar">
+        <label class="notification-filter">
+          <input
+            id="notificationUnreadOnly"
+            type="checkbox"
+          >
+          僅顯示未讀通知
+        </label>
+      </div>
+
+      <p
+        id="notificationMessage"
+        class="notification-message"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <div
+        id="notificationList"
+        class="notification-list"
+      ></div>
+    </section>
+
   </main>
 
   <div id="appFooter" hidden></div>

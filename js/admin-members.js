@@ -254,6 +254,50 @@ import {
     $('detailSave').hidden = !state.canEdit;
   }
 
+  // C5-A: admin-only read-only relationship overview.
+  function relationshipField(label, value) {
+    return `<div class="relationship-field"><dt>${esc(label)}</dt><dd>${esc(value ?? '—')}</dd></div>`;
+  }
+
+  function memberLabel(member) {
+    return member ? `${member.name || '未命名'} (${member.member_id})` : '無';
+  }
+
+  function renderRelationships(data) {
+    const history = Array.isArray(data.history) ? data.history : [];
+    const logs = Array.isArray(data.relationship_audit_logs) ? data.relationship_audit_logs : [];
+    const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
+    const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
+    $('relationshipContent').innerHTML = `
+      <dl class="relationship-fields">
+        ${relationshipField('直接上線', memberLabel(data.direct_upline))}
+        ${relationshipField('直接下線數', data.direct_downline_count)}
+        ${relationshipField('全部下線數', data.descendant_count)}
+        ${relationshipField('目前服務者', memberLabel(data.current_servicer))}
+        ${relationshipField('目前服務 ID', data.current_service_id || '無')}
+      </dl>
+      <h4>服務歷史</h4>
+      <div class="relationship-table-wrap"><table><thead><tr><th>服務者</th><th>狀態</th><th>建立時間</th></tr></thead><tbody>${serviceRows || '<tr><td colspan="3">尚無服務歷史</td></tr>'}</tbody></table></div>
+      <h4>關係異動紀錄（最近 50 筆）</h4>
+      <div class="relationship-table-wrap"><table><thead><tr><th>時間</th><th>操作人</th><th>動作</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
+  }
+
+  async function loadRelationships(memberId, requestId) {
+    $('relationshipPanel').hidden = false;
+    $('relationshipContent').replaceChildren();
+    $('relationshipMessage').textContent = '正在載入關係資料…';
+    try {
+      const data = await api('/api/admin/members/' + encodeURIComponent(memberId) + '/relationships');
+      if (requestId !== state.detailRequestId || state.selected?.member_id !== memberId) return;
+      if (!data.member || data.member.member_id !== memberId) throw new Error('INVALID_RESPONSE');
+      renderRelationships(data);
+      $('relationshipMessage').textContent = '';
+    } catch (error) {
+      if (requestId !== state.detailRequestId) return;
+      $('relationshipMessage').textContent = errorText(error);
+    }
+  }
+
   async function openDetail(memberId) {
     if (!state.authorized) return;
 
@@ -263,6 +307,8 @@ import {
     state.selected = null;
     panel.hidden = false;
     $('detailForm').hidden = true;
+    $('relationshipPanel').hidden = true;
+    $('relationshipContent').replaceChildren();
 
     setDetailMessage('正在載入會員資料…');
     updateSelection();
@@ -291,6 +337,8 @@ import {
       );
 
       updateSelection();
+      // Independent read: basic member detail remains usable if C4 fails.
+      void loadRelationships(memberId, requestId);
 
       panel.scrollIntoView({
         behavior: 'smooth',
@@ -319,6 +367,8 @@ import {
 
     $('memberDetail').hidden = true;
     $('detailForm').hidden = true;
+    $('relationshipPanel').hidden = true;
+    $('relationshipContent').replaceChildren();
 
     updateSelection();
   }

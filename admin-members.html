@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
 <link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
 <link rel="stylesheet" href="./css/app-shell.css">
-<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261110-95">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261116-c5a">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261110-95"></script>
+<script type="module" src="./js/admin-members.js?v=20261116-c5a"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -25,5 +25,10 @@
 <p id="detailMessage" role="status"></p>
 <form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
 <div class="member-filter-grid"><label>會員類型<input id="detailRole" readonly></label><label>帳號狀態<input id="detailStatus" readonly></label></div><label>建立時間<input id="detailCreated" readonly></label>
-<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form></section>
+<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form>
+<section id="relationshipPanel" class="relationship-panel" hidden aria-labelledby="relationshipTitle">
+<h3 id="relationshipTitle">組織與服務關係</h3>
+<p id="relationshipMessage" role="status"></p>
+<div id="relationshipContent"></div>
+</section></section>
 </main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div></body></html>

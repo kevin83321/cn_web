@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant"><head><script defer="" src="./js/app-shell.js?v=20261104-3"></script><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/><meta content="#f7f9fc" name="theme-color"/><title>加入 CN 會員</title>
+<link href="./css/register.css" rel="stylesheet"/>
+<link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="./js/register.js" type="module"></script>
+<link href="./css/app-shell.css?v=20261104-3" rel="stylesheet"/>  <link rel="stylesheet" href="./css/cn-polish.css">
+</head><body data-page="register"><div class="app-shell"><header class="app-header" id="appHeader"></header>
+<main class="register-main app-main">
+<div class="register-hero"><div class="register-hero-icon">✦</div><span class="step">WELCOME TO CN</span><h1>歡迎加入 CN</h1><p>你的 LINE 已完成身分驗證，接下來選擇適合的方式開始使用。</p></div>
+<section class="register-panel" id="choiceView">
+<button class="choice-card" id="existingButton" type="button"><span class="choice-icon">↗</span><span><strong>我已經有會員帳號</strong><small>使用原本帳號密碼，綁定 LINE 後直接登入</small></span><b>›</b></button>
+<button class="choice-card" id="newButton" type="button"><span class="choice-icon green">＋</span><span><strong>我是新會員</strong><small>建立會員資料，開始使用 CN 服務</small></span><b>›</b></button>
+</section>
+<section class="register-panel" hidden="" id="bindView"><button class="back-text" data-back="" type="button">‹ 返回選擇</button><h2>綁定既有會員</h2><p class="muted-text">為保護帳號，請先使用會員帳號密碼驗證，再綁定目前的 LINE。</p>
+<form class="register-form" id="bindForm"><label>會員帳號<input autocomplete="username" id="identifier" placeholder="請輸入會員帳號" required=""/></label><label>密碼<input autocomplete="current-password" id="password" placeholder="請輸入密碼" required="" type="password"/></label><button class="primary" id="bindSubmit" type="submit">驗證並綁定 LINE</button></form></section>
+<section class="register-panel" hidden="" id="newView"><button class="back-text" data-back="" type="button">‹ 返回選擇</button><h2>新會員註冊</h2><p class="muted-text">註冊資料與邀請關係需要由後端驗證。目前尚未開放建立新會員，以避免產生無效帳號。</p><div class="notice">新會員註冊 API 尚待實作。已有帳號的會員，可以先完成 LINE 綁定。</div><button class="secondary" id="switchToBind" type="button">我已有會員帳號</button></section>
+<p id="registerMessage" role="status"></p>
+</main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div></body></html>

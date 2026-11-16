@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
+<link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
+<link rel="stylesheet" href="./css/app-shell.css">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261110-95">
+<script defer src="./js/app-shell.js"></script>
+<script type="module" src="./js/admin-common.js"></script>
+<script type="module" src="./js/admin-members.js?v=20261110-95"></script>
+</head><body data-page="members">
+<div class="app-shell"><header class="app-header" id="appHeader"></header>
+<main class="app-main admin-members-page">
+<div class="app-intro"><span class="cn-eyebrow">ADMINISTRATION</span><h1>全部會員</h1><p>搜尋會員、檢視資料及管理基本資訊</p></div>
+<section class="cn-panel member-search-panel" aria-labelledby="searchTitle"><div class="admin-summary"><h2 id="searchTitle">會員查詢</h2><button id="resetFilters" class="member-quiet-button" type="button">清除條件</button></div>
+<form class="admin-filters" id="filters"><label>姓名或會員 ID<input id="query" type="search" placeholder="輸入姓名或會員 ID" autocomplete="off"></label>
+<div class="member-filter-grid"><label>會員類型<select id="role"><option value="">全部類型</option><option value="non_member">一般會員</option><option value="lifestyle">生活會員</option><option value="distributor">直銷商</option></select></label>
+<label>帳號狀態<select id="status"><option value="">全部狀態</option><option value="active">有效</option><option value="inactive">停用</option><option value="suspended">暫停</option></select></label></div>
+<button type="submit" id="searchButton" class="member-search-button">查詢會員</button></form></section>
+<section class="cn-panel member-results" aria-labelledby="resultsTitle"><div class="admin-summary"><h2 id="resultsTitle">查詢結果</h2><span id="count">—</span></div>
+<p id="message" role="status">正在確認權限…</p><div class="admin-items" id="items"></div>
+<div class="pager"><button id="previous" type="button" disabled>上一頁</button><span id="pageInfo">第 1 頁</span><button id="next" type="button" disabled>下一頁</button></div></section>
+<section id="memberDetail" class="member-detail member-detail-panel" hidden aria-labelledby="detailTitle">
+<div class="member-detail-head"><div><span class="cn-eyebrow">MEMBER DETAIL</span><h2 id="detailTitle">會員詳細資料</h2></div><button type="button" id="detailClose" class="member-quiet-button">關閉</button></div>
+<p id="detailMessage" role="status"></p>
+<form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
+<div class="member-filter-grid"><label>會員類型<input id="detailRole" readonly></label><label>帳號狀態<input id="detailStatus" readonly></label></div><label>建立時間<input id="detailCreated" readonly></label>
+<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form></section>
+</main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div></body></html>

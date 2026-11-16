@@ -1,0 +1,184 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f9fc">
+  <title>CN 會員中心</title>
+
+  <link rel="icon" type="image/x-icon" href="./asset/favicon.ico">
+  <link rel="stylesheet" href="./css/notification-center.css">
+  <link rel="stylesheet" href="./css/index.css">
+  <link rel="stylesheet" href="./css/app-shell.css">
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="./js/app-shell.js" defer></script>
+  <script type="module" src="./js/notification-center.js"></script>
+  <script src="./js/index.js" type="module"></script>
+  <link rel="stylesheet" href="./css/cn-polish.css">
+</head>
+
+<body>
+<div class="app-shell">
+  <div id="appHeader"></div>
+
+  <main>
+    <section id="loadingView" class="state-view">
+      <div class="spinner"></div>
+      <h1>歡迎來到 CN</h1>
+      <p id="loadingText">正在確認登入狀態…</p>
+    </section>
+
+    <section id="errorView" class="state-view" hidden>
+      <div class="state-icon">!</div>
+      <h1>暫時無法登入</h1>
+      <p id="errorText">請稍後再試</p>
+      <button id="retryButton" class="primary">重新嘗試</button>
+      <button id="manualLoginButton" class="secondary">
+        使用帳號密碼登入
+      </button>
+    </section>
+
+    <section id="guestView" class="state-view" hidden>
+      <div class="state-icon line">L</div>
+      <h1>歡迎加入 CN</h1>
+      <p>使用 LINE 即可快速登入會員中心</p>
+      <button id="lineLoginButton" class="line-button">
+        使用 LINE 登入
+      </button>
+      <button id="passwordLoginButton" class="text-button">
+        使用會員帳號登入
+      </button>
+    </section>
+
+    <section id="passwordView" class="state-view" hidden>
+      <h1>會員帳號登入</h1>
+      <p>已有會員帳號？請輸入帳號及密碼</p>
+
+      <form id="passwordForm" class="auth-form">
+        <label>
+          帳號
+          <input id="identifier" autocomplete="username" required>
+        </label>
+        <label>
+          密碼
+          <input id="password" type="password"
+                 autocomplete="current-password" required>
+        </label>
+        <button class="primary" type="submit">登入</button>
+      </form>
+
+      <button id="backToLineButton" class="text-button">
+        返回 LINE 登入
+      </button>
+    </section>
+
+    <section id="dashboardView" hidden>
+      <div class="greeting member-summary">
+        <p class="eyebrow" id="greetingText">您好，歡迎回來</p>
+        <div class="member-summary-row">
+          <div class="member-summary-info">
+            <h1 id="memberName">會員</h1>
+
+            <div class="member-summary-details">
+              <div class="badge" id="memberRole">會員</div>
+              <strong id="memberId">—</strong>
+            </div>
+          </div>
+
+          <span class="card-status member-summary-status">
+            <i></i> 已登入
+          </span>
+        </div>
+      </div>
+
+      <section class="feature-section">
+        <div class="section-title">
+          <h2>我的服務</h2>
+          <span>快速存取</span>
+        </div>
+
+        <div id="featureGrid" class="feature-grid"></div>
+      </section>
+
+      <section id="adminSection" class="feature-section" hidden>
+        <div class="section-title"><h2>管理功能</h2></div>
+        <div id="adminGrid" class="feature-grid"></div>
+      </section>
+    </section>
+
+    <section id="accountView" hidden>
+      <div class="section-title"><h2>個人資料與帳號設定</h2></div>
+      <div class="setting-card">
+        <p class="card-label">會員姓名</p>
+        <strong id="accountName">會員</strong>
+        <p class="card-label">會員編號</p>
+        <strong id="accountId">—</strong>
+      </div>
+      <button id="logoutButton" class="logout-button" type="button">登出會員帳號</button>
+    </section>
+    <!-- Floating notification dialog -->
+    <div id="notificationBackdrop" class="notification-backdrop" hidden></div>
+    <!-- Notification -->
+    <section
+      id="notificationCenter"
+      class="notification-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notificationTitle"
+      tabindex="-1"
+      hidden
+    >
+      <div class="notification-header">
+        <div class="notification-heading">
+          <h2 id="notificationTitle">通知中心</h2>
+
+          <span
+            id="notificationCount"
+            class="notification-count"
+            hidden
+          ></span>
+        </div>
+
+        <div class="notification-header-actions">
+        <button
+          id="reloadNotifications"
+          type="button"
+          class="secondary"
+        >
+          重新整理
+        </button>
+        <button id="closeNotifications" class="notification-close" type="button" aria-label="關閉通知中心">✕</button>
+        </div>
+      </div>
+
+      <div class="notification-toolbar">
+        <label class="notification-filter">
+          <input
+            id="notificationUnreadOnly"
+            type="checkbox"
+          >
+          僅顯示未讀通知
+        </label>
+      </div>
+
+      <p
+        id="notificationMessage"
+        class="notification-message"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <div
+        id="notificationList"
+        class="notification-list"
+      ></div>
+    </section>
+
+  </main>
+
+  <div id="appFooter" hidden></div>
+</div>
+</body>
+</html>

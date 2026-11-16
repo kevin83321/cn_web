@@ -1,0 +1,25 @@
+/* Invite page: isolate layout from legacy global selectors */
+body[data-page="invites"] { margin:0!important; padding:0!important; background:#f4f7fc; }
+body[data-page="invites"] .app-shell { max-width:600px; margin:0 auto; min-height:100dvh; padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); background:#f7f9fd; }
+body[data-page="invites"] #appHeader { display:flex!important; flex-direction:row!important; align-items:center!important; justify-content:space-between; gap:14px; min-height:76px; padding:12px 16px; }
+body[data-page="invites"] #appHeader .header-heading { min-width:0; }
+body[data-page="invites"] #appHeader .header-back,body[data-page="invites"] #appHeader .header-mark { flex-shrink:0; }
+body[data-page="invites"] main.invite-main { width:100%; max-width:none; min-width:0; margin:0!important; padding:22px 16px 36px!important; border-radius:0!important; box-shadow:none!important; background:transparent; }
+body[data-page="invites"] .app-intro h1 { margin:8px 0 10px; font-size:25px; }
+body[data-page="invites"] .app-intro p { color:#61718c; line-height:1.6; }
+body[data-page="invites"] .cn-eyebrow { color:#607594; font-size:12px; letter-spacing:.05em; }
+.invite-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; background:#edf2fa; padding:5px; border-radius:15px; margin:22px 0; }
+body[data-page="invites"] .invite-tab { min-height:48px; padding:10px; background:transparent; color:#52647e; border:0; border-radius:11px; font-size:15px; font-weight:700; }
+body[data-page="invites"] .invite-tab[aria-selected="true"] { background:white; color:#2354d5; box-shadow:0 2px 8px #17375a16; }
+.invite-tab:focus-visible { outline:3px solid #8cb1ff; outline-offset:2px; }
+#invitePanelCreate,#invitePanelHistory { min-width:0; }
+#invitePanelCreate fieldset,#invitePanelCreate #claimFields,#invitePanelCreate #inviteResult { background:white; }
+#invitePanelCreate #createInviteButton { margin-top:16px; }
+#invitationHistory { margin-top:0; padding-top:0; border-top:0; }
+#invitationHistory .history-tools { min-width:0; }
+body[data-page="invites"] #appFooter { width:100%; }
+@media(max-width:700px) {
+ body[data-page="invites"] main.invite-main { margin:0!important; padding:20px 14px 32px!important; }
+ body[data-page="invites"] #invitePanelCreate input,body[data-page="invites"] #invitePanelCreate select { max-width:100%; }
+ body[data-page="invites"] .history-tools { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+}

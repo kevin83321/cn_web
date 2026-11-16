@@ -2,7 +2,7 @@
 'use strict';
 
 export const CONFIG = Object.freeze({
-  API_BASE: 'https://cn-web-backend.kevin83321.workers.dev',
+  API_BASE: 'https://cn-web-backend-test.kevin83321.workers.dev',
 
   LIFF_ID: '2012126330-D7gu42yk',
 

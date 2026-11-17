@@ -16,3 +16,17 @@
 .admin-members-page .relationship-table-wrap pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:420px;font-size:12px}
 .admin-members-page #relationshipMessage{overflow-wrap:anywhere}
 @media(max-width:600px){.admin-members-page .relationship-fields{grid-template-columns:1fr}}
+
+/* C5-A.2: compact member rows and accessible overlay */
+.admin-members-page .member-compact-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,28%);align-items:stretch;gap:12px;padding:14px 16px}
+.admin-members-page .member-compact-info{display:grid;grid-template-rows:auto auto;align-content:center;gap:9px;min-width:0}
+.admin-members-page .member-compact-identity{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:baseline;min-width:0;font-size:15px}
+.admin-members-page .member-compact-id{font-size:12px;color:#64748b;overflow-wrap:anywhere}
+.admin-members-page .member-compact-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:#52647f}
+.admin-members-page .member-status-tag{border-radius:20px;background:#eaf6ed;color:#18723c;padding:3px 9px;font-size:12px}
+.admin-members-page .member-compact-action{width:100%;height:100%;min-height:68px;margin:0;border-radius:12px;font-size:14px}
+.member-modal-open{overflow:hidden}
+.member-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.56);z-index:1100}
+.admin-members-page .member-modal{position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);z-index:1101;width:min(720px,calc(100vw - 24px));max-height:min(90dvh,900px);overflow-y:auto;overscroll-behavior:contain;margin:0;padding:20px;border-radius:18px;background:#fff;box-shadow:0 24px 72px rgba(15,23,42,.3);scroll-margin-top:0}
+.admin-members-page .member-modal .member-detail-head{position:sticky;top:-20px;background:#fff;z-index:1;padding:8px 0 12px;border-bottom:1px solid #e1e8f2}
+@media(max-width:480px){.admin-members-page .member-compact-card{grid-template-columns:minmax(0,1fr) 108px;gap:8px;padding:12px}.admin-members-page .member-compact-identity{font-size:14px}.admin-members-page .member-compact-action{font-size:13px;padding:8px}.admin-members-page .member-modal{padding:14px;max-height:92dvh}.admin-members-page .member-modal .member-detail-head{top:-14px}}

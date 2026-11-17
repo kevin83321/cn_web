@@ -94,45 +94,22 @@ import {
 
   function itemCard(member) {
     const memberId = String(member.member_id || '');
-
-    const isSelected =
-      state.selected?.member_id === memberId;
-
+    const isSelected = state.selected?.member_id === memberId;
     return `
-      <article class="admin-item${
-        isSelected ? ' is-selected' : ''
-      }">
-        <div class="admin-item-head">
-          <strong>${esc(member.name || '未設定姓名')}</strong>
-
-          <span class="admin-pill">
-            ${esc(roleText(member.role))}
-          </span>
+      <article class="admin-item member-compact-card${isSelected ? ' is-selected' : ''}">
+        <div class="member-compact-info">
+          <div class="member-compact-identity">
+            <strong>${esc(member.name || '未設定姓名')}</strong>
+            <span class="member-compact-id">(${esc(memberId)})</span>
+          </div>
+          <div class="member-compact-meta">
+            <span>${esc(roleText(member.role))}</span>
+            <span class="member-status-tag">${esc(statusText(member.status))}</span>
+          </div>
         </div>
-
-        <dl>
-          <div>
-            <dt>會員 ID</dt>
-            <dd>${esc(memberId)}</dd>
-          </div>
-
-          <div>
-            <dt>狀態</dt>
-            <dd>${esc(statusText(member.status))}</dd>
-          </div>
-
-          <div>
-            <dt>建立時間</dt>
-            <dd>${esc(member.created_at)}</dd>
-          </div>
-        </dl>
-
-        <button
-          type="button"
-          class="detail-open"
-          data-member-id="${esc(memberId)}"
-        >
-          查看詳細資料
+        <button type="button" class="detail-open member-compact-action"
+          data-member-id="${esc(memberId)}" aria-label="查看 ${esc(member.name || memberId)} 的詳細資料">
+          詳細資料
         </button>
       </article>
     `;
@@ -235,6 +212,7 @@ import {
 
   function fillDetail(member) {
     $('detailId').value = member.member_id || '';
+    $('detailAmwayId').value = member.amway_id ?? ''; 
     $('detailName').value = member.name || '';
     $('detailEmail').value = member.email || '';
     $('detailPhone').value = member.phone || '';
@@ -260,16 +238,17 @@ import {
   }
 
   function memberLabel(member) {
-    return member ? `${member.name || '未命名'} (${member.member_id})` : '無';
+    return member ? `${member.name || '未命名'} (${member.member_id})${member.amway_id ? ' · 安麗編號：' + member.amway_id : ''}` : '無';
   }
 
   function renderRelationships(data) {
     const history = Array.isArray(data.history) ? data.history : [];
     const logs = Array.isArray(data.relationship_audit_logs) ? data.relationship_audit_logs : [];
-    const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
+    const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.distributor_amway_id || '—')}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
     const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
     $('relationshipContent').innerHTML = `
       <dl class="relationship-fields">
+        ${relationshipField('會員安麗編號', data.member?.amway_id || '—')}
         ${relationshipField('直接上線', memberLabel(data.direct_upline))}
         ${relationshipField('直接下線數', data.direct_downline_count)}
         ${relationshipField('全部下線數', data.descendant_count)}
@@ -277,7 +256,7 @@ import {
         ${relationshipField('目前服務 ID', data.current_service_id || '無')}
       </dl>
       <h4>服務歷史</h4>
-      <div class="relationship-table-wrap"><table><thead><tr><th>服務者</th><th>狀態</th><th>建立時間</th></tr></thead><tbody>${serviceRows || '<tr><td colspan="3">尚無服務歷史</td></tr>'}</tbody></table></div>
+      <div class="relationship-table-wrap"><table><thead><tr><th>服務者</th><th>安麗編號</th><th>狀態</th><th>建立時間</th></tr></thead><tbody>${serviceRows || '<tr><td colspan="4">尚無服務歷史</td></tr>'}</tbody></table></div>
       <h4>關係異動紀錄（最近 50 筆）</h4>
       <div class="relationship-table-wrap"><table><thead><tr><th>時間</th><th>操作人</th><th>動作</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
   }
@@ -290,6 +269,7 @@ import {
       const data = await api('/api/admin/members/' + encodeURIComponent(memberId) + '/relationships');
       if (requestId !== state.detailRequestId || state.selected?.member_id !== memberId) return;
       if (!data.member || data.member.member_id !== memberId) throw new Error('INVALID_RESPONSE');
+      $('detailAmwayId').value = data.member.amway_id ?? '';
       renderRelationships(data);
       $('relationshipMessage').textContent = '';
     } catch (error) {
@@ -306,6 +286,9 @@ import {
 
     state.selected = null;
     panel.hidden = false;
+    $('detailBackdrop').hidden = false;
+    document.body.classList.add('member-modal-open');
+    $('detailClose').focus();
     $('detailForm').hidden = true;
     $('relationshipPanel').hidden = true;
     $('relationshipContent').replaceChildren();
@@ -340,10 +323,7 @@ import {
       // Independent read: basic member detail remains usable if C4 fails.
       void loadRelationships(memberId, requestId);
 
-      panel.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      // Modal stays in place; only its content scrolls.
 
     } catch (error) {
       if (requestId !== state.detailRequestId) return;
@@ -366,6 +346,10 @@ import {
     state.selected = null;
 
     $('memberDetail').hidden = true;
+    $('detailBackdrop').hidden = true;
+    document.body.classList.remove('member-modal-open');
+    const opener = document.querySelector('.admin-item.is-selected .detail-open');
+    if (opener) opener.focus();
     $('detailForm').hidden = true;
     $('relationshipPanel').hidden = true;
     $('relationshipContent').replaceChildren();
@@ -474,10 +458,19 @@ import {
     });
 
     // 詳細資料
-    $('detailClose')?.addEventListener(
-      'click',
-      closeDetail
-    );
+    $('detailClose')?.addEventListener('click', closeDetail);
+    $('detailBackdrop')?.addEventListener('click', closeDetail);
+    document.addEventListener('keydown', event => {
+      if ($('memberDetail')?.hidden) return;
+      if (event.key === 'Escape') { event.preventDefault(); closeDetail(); }
+      if (event.key === 'Tab') {
+        const focusable = [...$('memberDetail').querySelectorAll('button:not([disabled]):not([hidden]), input:not([disabled]):not([hidden]), select:not([disabled]), textarea:not([disabled]), a[href]')].filter(el => el.getClientRects().length);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
 
     $('detailForm')?.addEventListener(
       'submit',

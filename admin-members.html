@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
 <link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
 <link rel="stylesheet" href="./css/app-shell.css">
-<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261116-c5a">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5a2">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261116-c5a"></script>
+<script type="module" src="./js/admin-members.js?v=20261117-c5a2"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -20,10 +20,11 @@
 <section class="cn-panel member-results" aria-labelledby="resultsTitle"><div class="admin-summary"><h2 id="resultsTitle">查詢結果</h2><span id="count">—</span></div>
 <p id="message" role="status">正在確認權限…</p><div class="admin-items" id="items"></div>
 <div class="pager"><button id="previous" type="button" disabled>上一頁</button><span id="pageInfo">第 1 頁</span><button id="next" type="button" disabled>下一頁</button></div></section>
-<section id="memberDetail" class="member-detail member-detail-panel" hidden aria-labelledby="detailTitle">
+<div id="detailBackdrop" class="member-modal-backdrop" hidden></div>
+<section id="memberDetail" class="member-detail member-detail-panel member-modal" role="dialog" aria-modal="true" hidden aria-labelledby="detailTitle">
 <div class="member-detail-head"><div><span class="cn-eyebrow">MEMBER DETAIL</span><h2 id="detailTitle">會員詳細資料</h2></div><button type="button" id="detailClose" class="member-quiet-button">關閉</button></div>
 <p id="detailMessage" role="status"></p>
-<form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
+<form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>安麗直銷商編號<input id="detailAmwayId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
 <div class="member-filter-grid"><label>會員類型<input id="detailRole" readonly></label><label>帳號狀態<input id="detailStatus" readonly></label></div><label>建立時間<input id="detailCreated" readonly></label>
 <div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form>
 <section id="relationshipPanel" class="relationship-panel" hidden aria-labelledby="relationshipTitle">

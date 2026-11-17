@@ -264,8 +264,9 @@ import {
       </dl>
       <h4>服務歷史</h4>
       <div class="relationship-table-wrap"><table><thead><tr><th>服務者</th><th>安麗編號</th><th>狀態</th><th>建立時間</th></tr></thead><tbody>${serviceRows || '<tr><td colspan="4">尚無服務歷史</td></tr>'}</tbody></table></div>
-      <h4>關係異動紀錄（最近 50 筆）</h4>
-      <div class="relationship-table-wrap"><table><thead><tr><th>時間</th><th>操作人</th><th>動作</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
+      `;
+    $('auditContent').innerHTML = `<div class="relationship-table-wrap"><table><thead><tr><th>時間</th><th>操作人</th><th>動作</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
+    $('auditMessage').textContent = '';
   }
 
   async function loadRelationships(memberId, requestId) {
@@ -273,6 +274,7 @@ import {
     $('relationshipContent').replaceChildren();
     $('hierarchyEditSection').hidden = true;
     $('relationshipMessage').textContent = '正在載入關係資料…';
+    $('auditMessage').textContent = '正在載入異動紀錄…';
     try {
       const data = await api('/api/admin/members/' + encodeURIComponent(memberId) + '/relationships');
       if (requestId !== state.detailRequestId || state.selected?.member_id !== memberId) return;
@@ -283,6 +285,7 @@ import {
     } catch (error) {
       if (requestId !== state.detailRequestId) return;
       $('relationshipMessage').textContent = errorText(error);
+      $('auditMessage').textContent = errorText(error);
     }
   }
 
@@ -355,6 +358,22 @@ import {
     } finally { button.disabled = false; }
   }
 
+  const memberTabs = [
+    ['memberTabBasic', 'memberPanelBasic'],
+    ['memberTabRelations', 'memberPanelRelations'],
+    ['memberTabAudit', 'memberPanelAudit']
+  ];
+
+  function selectMemberTab(tabId, focus = false) {
+    memberTabs.forEach(([id, panelId]) => {
+      const active = id === tabId;
+      $(id).setAttribute('aria-selected', String(active));
+      $(id).tabIndex = active ? 0 : -1;
+      $(panelId).hidden = !active;
+    });
+    if (focus) $(tabId).focus();
+  }
+
   async function openDetail(memberId) {
     if (!state.authorized) return;
 
@@ -363,6 +382,9 @@ import {
 
     state.selected = null;
     resetHierarchyEditor();
+    selectMemberTab('memberTabBasic');
+    $('auditContent').replaceChildren();
+    $('auditMessage').textContent = '';
     panel.hidden = false;
     $('detailBackdrop').hidden = false;
     document.body.classList.add('member-modal-open');
@@ -432,6 +454,8 @@ import {
     $('detailForm').hidden = true;
     $('relationshipPanel').hidden = true;
     $('relationshipContent').replaceChildren();
+    $('auditContent').replaceChildren();
+    selectMemberTab('memberTabBasic');
 
     updateSelection();
   }
@@ -537,6 +561,16 @@ import {
     });
 
     // 詳細資料
+    memberTabs.forEach(([tabId], index) => {
+      $(tabId).addEventListener('click', () => selectMemberTab(tabId));
+      $(tabId).addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? memberTabs.length - 1 :
+          (index + (event.key === 'ArrowRight' ? 1 : -1) + memberTabs.length) % memberTabs.length;
+        selectMemberTab(memberTabs[next][0], true);
+      });
+    });
     $('detailClose')?.addEventListener('click', closeDetail);
     $('detailBackdrop')?.addEventListener('click', closeDetail);
     document.addEventListener('keydown', event => {

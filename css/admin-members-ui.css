@@ -46,3 +46,12 @@
 .admin-members-page .hierarchy-edit-actions{display:flex;gap:8px;flex-wrap:wrap}
 .admin-members-page .hierarchy-edit-actions button{flex:1;min-width:110px}
 .admin-members-page #hierarchyEditMessage{font-size:13px;overflow-wrap:anywhere}
+
+/* C5-B Tabs: compact three-section member detail modal */
+.admin-members-page .member-detail-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:5px;margin:12px 0 16px;border-radius:13px;background:#edf2fa}
+.admin-members-page .member-detail-tabs button{border:0;border-radius:10px;background:transparent;color:#52647f;font-size:13px;font-weight:700;min-height:43px;padding:7px 5px;line-height:1.35;cursor:pointer}
+.admin-members-page .member-detail-tabs button[aria-selected="true"]{background:#fff;color:#2859d7;box-shadow:0 1px 7px #17375a18}
+.admin-members-page .member-detail-tabs button:focus-visible{outline:2px solid #2859d7;outline-offset:2px}
+.admin-members-page #memberPanelRelations .relationship-panel,.admin-members-page #memberPanelAudit .relationship-panel{margin-top:0;padding-top:0;border-top:0}
+.admin-members-page #memberPanelAudit .relationship-table-wrap table{min-width:520px}
+@media(max-width:420px){.admin-members-page .member-detail-tabs button{font-size:12px;padding:7px 2px}}

@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
 <link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
 <link rel="stylesheet" href="./css/app-shell.css">
-<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5b">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5b-tabs">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261117-c5b"></script>
+<script type="module" src="./js/admin-members.js?v=20261117-c5b-tabs"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -23,10 +23,17 @@
 <div id="detailBackdrop" class="member-modal-backdrop" hidden></div>
 <section id="memberDetail" class="member-detail member-detail-panel member-modal" role="dialog" aria-modal="true" hidden aria-labelledby="detailTitle">
 <div class="member-detail-head"><div><span class="cn-eyebrow">MEMBER DETAIL</span><h2 id="detailTitle">會員詳細資料</h2></div><button type="button" id="detailClose" class="member-quiet-button">關閉</button></div>
+<div class="member-detail-tabs" role="tablist" aria-label="會員詳細資料分類">
+<button type="button" id="memberTabBasic" role="tab" aria-selected="true" aria-controls="memberPanelBasic" tabindex="0">基本資料</button>
+<button type="button" id="memberTabRelations" role="tab" aria-selected="false" aria-controls="memberPanelRelations" tabindex="-1">組織服務關係</button>
+<button type="button" id="memberTabAudit" role="tab" aria-selected="false" aria-controls="memberPanelAudit" tabindex="-1">異動紀錄</button>
+</div>
+<div id="memberPanelBasic" role="tabpanel" aria-labelledby="memberTabBasic">
 <p id="detailMessage" role="status"></p>
 <form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>安麗直銷商編號<input id="detailAmwayId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
 <div class="member-filter-grid"><label>會員類型<input id="detailRole" readonly></label><label>帳號狀態<input id="detailStatus" readonly></label></div><label>建立時間<input id="detailCreated" readonly></label>
-<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form>
+<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form></div>
+<div id="memberPanelRelations" role="tabpanel" aria-labelledby="memberTabRelations" hidden>
 <section id="relationshipPanel" class="relationship-panel" hidden aria-labelledby="relationshipTitle">
 <h3 id="relationshipTitle">組織與服務關係</h3>
 <p id="relationshipMessage" role="status"></p>
@@ -46,5 +53,9 @@
 <div class="hierarchy-edit-actions"><button type="submit" id="hierarchySubmit">確認修改</button><button type="button" id="hierarchyCancel" class="member-quiet-button">取消</button></div>
 <p id="hierarchyEditMessage" role="status"></p>
 </form></div>
-</section></section>
+</section></div>
+<div id="memberPanelAudit" role="tabpanel" aria-labelledby="memberTabAudit" hidden>
+<section class="relationship-panel" aria-labelledby="auditTitle"><h3 id="auditTitle">關係異動紀錄（最近 50 筆）</h3>
+<p id="auditMessage" role="status"></p><div id="auditContent"></div></section>
+</div></section>
 </main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div></body></html>

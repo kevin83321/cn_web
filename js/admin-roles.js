@@ -86,7 +86,7 @@ import { $, api, getToken, errors } from './admin-common.js';
     const role = detail.role;
     const existing = new Set((detail.permissions || []).map(p => typeof p === 'string' ? p : p.permission_code));
     const assignable = new Set(state.catalog?.assignable_permission_codes || []);
-    const canEdit = has('admin.roles.permissions.manage') && !role.protected;
+    const canEdit = has('admin.roles.permissions.manage') && !role.protected && [...existing].every(code => assignable.has(code));
     const groups = new Map();
     for (const p of state.catalog?.permissions || []) {
       const code = p.permission_code;
@@ -121,7 +121,7 @@ import { $, api, getToken, errors } from './admin-common.js';
     $('editTitle').textContent = `${role.display_name || role.system_role} · 權限設定`;
     $('editInfo').textContent = role.protected
       ? '受保護角色僅可檢視，不可修改權限。'
-      : canEdit ? '調整勾選後儲存。變更可能使相關會員需要重新登入。' : '目前只有檢視權限。';
+      : canEdit ? '只能授予自己擁有的權限。變更可能使相關會員需要重新登入。' : '目前只有檢視權限，或此角色包含超出你可管理範圍的權限。';
     $('permissionSummary').textContent = `已啟用 ${existing.size} 項角色權限`;
   }
 

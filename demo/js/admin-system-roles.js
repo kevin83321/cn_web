@@ -44,7 +44,8 @@
           button.dataset.role = definition.system_role;
           button.dataset.method = active.has(definition.system_role) ? 'DELETE' : 'PUT';
           button.textContent = active.has(definition.system_role) ? '撤銷角色' : '指派角色';
-          button.disabled = busy || (result.member_status !== 'active' && !active.has(definition.system_role));
+          button.disabled = busy || definition.assignable === false || (result.member_status !== 'active' && !active.has(definition.system_role));
+          if (definition.assignable === false) button.title = '超出可授權範圍，無法指派或撤銷';
           row.append(button);
         }
         roleList.append(row);

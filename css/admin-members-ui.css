@@ -55,3 +55,28 @@
 .admin-members-page #memberPanelRelations .relationship-panel,.admin-members-page #memberPanelAudit .relationship-panel{margin-top:0;padding-top:0;border-top:0}
 .admin-members-page #memberPanelAudit .relationship-table-wrap table{min-width:520px}
 @media(max-width:420px){.admin-members-page .member-detail-tabs button{font-size:12px;padding:7px 2px}}
+
+/* C5-B.2: mobile-first hierarchy edit form; scoped to this panel only */
+.admin-members-page #hierarchyEditForm{display:flex;flex-direction:column;gap:12px;min-width:0;margin-top:12px;padding:14px 12px;box-sizing:border-box}
+.admin-members-page #hierarchyEditForm>*{min-width:0;max-width:100%;box-sizing:border-box}
+.admin-members-page #hierarchyEditForm h4{font-size:16px;line-height:1.35}
+.admin-members-page #hierarchyEditForm .hierarchy-help{line-height:1.55}
+.admin-members-page #hierarchyEditForm label{display:block;margin:0;line-height:1.4}
+.admin-members-page #hierarchyEditForm .hierarchy-search-controls{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:8px;align-items:stretch;width:100%}
+.admin-members-page #hierarchyEditForm .hierarchy-search-controls input{min-width:0;width:100%;height:44px;margin:0;box-sizing:border-box}
+.admin-members-page #hierarchyEditForm .hierarchy-search-button{height:44px;width:100%;margin:0;padding:0 8px;border:1px solid #dce5f4;border-radius:10px;background:#fff;color:#2859d7;font-size:14px;font-weight:700;cursor:pointer}
+.admin-members-page #hierarchyParentSearchMessage:empty,.admin-members-page #hierarchyEditMessage:empty{display:none}
+.admin-members-page #hierarchyParentSearchMessage,.admin-members-page #hierarchyEditMessage{margin:0;font-size:12px;line-height:1.5}
+.admin-members-page #hierarchyParentResults:empty{display:none}
+.admin-members-page #hierarchyParentResults{max-height:180px;min-height:0;overflow-y:auto;gap:6px}
+.admin-members-page #hierarchyParentResults p{margin:0;font-size:13px;color:#64748b}
+.admin-members-page #hierarchySelectedParent{margin:0;padding:10px 12px;background:#fff;border:1px solid #dce5f4;border-radius:10px;font-size:13px;overflow-wrap:anywhere;line-height:1.45}
+.admin-members-page #hierarchyEditForm label.hierarchy-checkbox{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid #dce5f4;border-radius:10px;background:#fff;cursor:pointer}
+.admin-members-page #hierarchyEditForm .hierarchy-checkbox input[type="checkbox"]{flex:0 0 18px;width:18px;height:18px;margin:0;accent-color:#2859d7}
+.admin-members-page #hierarchyEditForm .hierarchy-checkbox span{display:block;min-width:0;font-size:13px}
+.admin-members-page #hierarchyEditForm .hierarchy-checkbox small{display:block;margin-top:2px;color:#64748b;font-size:11px;font-weight:400}
+.admin-members-page #hierarchyEditForm textarea{width:100%;min-height:86px;max-height:220px;resize:vertical;box-sizing:border-box;margin:0}
+.admin-members-page #hierarchyEditForm .hierarchy-edit-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.admin-members-page #hierarchyEditForm .hierarchy-edit-actions button{min-width:0;width:100%;min-height:44px;margin:0;border-radius:10px;font-weight:700;font-size:14px}
+.admin-members-page #hierarchyEditForm .hierarchy-primary-button{border:1px solid #2859d7;background:#2859d7;color:#fff}
+@media(max-width:420px){.admin-members-page #hierarchyEditForm{padding:12px 10px;gap:10px}.admin-members-page #hierarchyEditForm .hierarchy-search-controls{grid-template-columns:minmax(0,1fr) 66px}}

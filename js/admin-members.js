@@ -17,6 +17,10 @@ import {
     loading: false,
     authorized: false,
     canEdit: false,
+    canEditHierarchy: false,
+    relationships: null,
+    selectedParent: null,
+    parentSearchRequestId: 0,
     selected: null,
     detailRequestId: 0,
     listRequestId: 0
@@ -24,6 +28,7 @@ import {
 
   const READ_PERMISSION = 'admin.members.read';
   const UPDATE_PERMISSION = 'admin.members.update';
+  const HIERARCHY_PERMISSION = 'admin.members.hierarchy.update';
 
   const roleNames = {
     distributor: '直銷商',
@@ -246,6 +251,8 @@ import {
     const logs = Array.isArray(data.relationship_audit_logs) ? data.relationship_audit_logs : [];
     const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.distributor_amway_id || '—')}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
     const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
+    state.relationships = data;
+    $('hierarchyEditSection').hidden = !state.canEditHierarchy || !data.direct_upline;
     $('relationshipContent').innerHTML = `
       <dl class="relationship-fields">
         ${relationshipField('會員安麗編號', data.member?.amway_id || '—')}
@@ -264,6 +271,7 @@ import {
   async function loadRelationships(memberId, requestId) {
     $('relationshipPanel').hidden = false;
     $('relationshipContent').replaceChildren();
+    $('hierarchyEditSection').hidden = true;
     $('relationshipMessage').textContent = '正在載入關係資料…';
     try {
       const data = await api('/api/admin/members/' + encodeURIComponent(memberId) + '/relationships');
@@ -278,6 +286,75 @@ import {
     }
   }
 
+
+  function resetHierarchyEditor() {
+    state.relationships = null;
+    state.selectedParent = null;
+    state.parentSearchRequestId++;
+    $('hierarchyEditForm').hidden = true;
+    $('hierarchyEditSection').hidden = true;
+    $('hierarchyParentSearch').value = '';
+    $('hierarchyParentResults').replaceChildren();
+    $('hierarchyParentSearchMessage').textContent = '';
+    $('hierarchySelectedParent').textContent = '尚未選擇新上線';
+    $('hierarchySyncService').checked = false;
+    $('hierarchyReason').value = '';
+    $('hierarchyEditMessage').textContent = '';
+  }
+
+  async function searchHierarchyParent() {
+    const query = $('hierarchyParentSearch').value.trim();
+    const requestId = ++state.parentSearchRequestId;
+    state.selectedParent = null;
+    $('hierarchySelectedParent').textContent = '尚未選擇新上線';
+    $('hierarchyParentResults').replaceChildren();
+    if (!query) { $('hierarchyParentSearchMessage').textContent = '請輸入搜尋條件'; return; }
+    $('hierarchyParentSearchButton').disabled = true;
+    $('hierarchyParentSearchMessage').textContent = '搜尋中…';
+    try {
+      const data = await api('/api/admin/members?' + new URLSearchParams({q:query,page:'1',page_size:'20'}));
+      if (requestId !== state.parentSearchRequestId) return;
+      const candidates = (data.items || []).filter(m => m.member_id !== state.selected?.member_id && m.role === 'distributor' && m.status === 'active');
+      $('hierarchyParentResults').innerHTML = candidates.map(m => `<button type="button" class="hierarchy-parent-choice" data-parent-id="${esc(m.member_id)}"><strong>${esc(m.name)}</strong><small>${esc(m.member_id)}${m.amway_id ? ' · ' + esc(m.amway_id) : ''}</small></button>`).join('') || '<p>此頁搜尋結果沒有符合條件的有效直銷商</p>';
+      $('hierarchyParentSearchMessage').textContent = `顯示 ${candidates.length} 位候選人（最多查詢 20 筆）`;
+    } catch (error) {
+      if (requestId === state.parentSearchRequestId) $('hierarchyParentSearchMessage').textContent = errorText(error);
+    } finally {
+      if (requestId === state.parentSearchRequestId) $('hierarchyParentSearchButton').disabled = false;
+    }
+  }
+
+  async function submitHierarchyChange(event) {
+    event.preventDefault();
+    const target = state.selected;
+    const current = state.relationships?.direct_upline;
+    const next = state.selectedParent;
+    const reason = $('hierarchyReason').value.trim();
+    const sync = $('hierarchySyncService').checked;
+    if (!state.canEditHierarchy || !target || !current) return;
+    if (!next) { $('hierarchyEditMessage').textContent = '請先選擇新的直接上線'; return; }
+    if (next.member_id === current.member_id) { $('hierarchyEditMessage').textContent = '新上線與目前相同'; return; }
+    if (!reason || reason.length > 500) { $('hierarchyEditMessage').textContent = '請填寫 1～500 字的異動原因'; return; }
+    const text = `確認修改 ${target.name} (${target.member_id}) 的直接上線？\n目前：${current.name} (${current.member_id})\n新的：${next.name} (${next.member_id})\n同步服務者：${sync ? '是' : '否'}\n原因：${reason}`;
+    if (!window.confirm(text)) return;
+    const button = $('hierarchySubmit');
+    const requestId = state.detailRequestId;
+    button.disabled = true;
+    $('hierarchyEditMessage').textContent = '正在更新組織關係…';
+    try {
+      const data = await api('/api/admin/members/' + encodeURIComponent(target.member_id) + '/hierarchy', {
+        method: 'PATCH', body: {new_parent_member_id:next.member_id,sync_service:sync,reason}
+      });
+      if (requestId !== state.detailRequestId) return;
+      $('hierarchyEditMessage').textContent = data.changed === false ? '組織關係沒有變更' : '組織關係已更新';
+      $('hierarchyEditForm').hidden = true;
+      await loadRelationships(target.member_id, requestId);
+      await load();
+    } catch (error) {
+      if (requestId === state.detailRequestId) $('hierarchyEditMessage').textContent = errorText(error);
+    } finally { button.disabled = false; }
+  }
+
   async function openDetail(memberId) {
     if (!state.authorized) return;
 
@@ -285,6 +362,7 @@ import {
     const panel = $('memberDetail');
 
     state.selected = null;
+    resetHierarchyEditor();
     panel.hidden = false;
     $('detailBackdrop').hidden = false;
     document.body.classList.add('member-modal-open');
@@ -343,6 +421,7 @@ import {
 
   function closeDetail() {
     state.detailRequestId++;
+    resetHierarchyEditor();
     state.selected = null;
 
     $('memberDetail').hidden = true;
@@ -472,6 +551,24 @@ import {
       }
     });
 
+    $('hierarchyEditToggle').addEventListener('click', () => {
+      $('hierarchyEditForm').hidden = !$('hierarchyEditForm').hidden;
+      $('hierarchyEditMessage').textContent = '';
+    });
+    $('hierarchyCancel').addEventListener('click', () => { $('hierarchyEditForm').hidden = true; });
+    $('hierarchyParentSearchButton').addEventListener('click', searchHierarchyParent);
+    $('hierarchyParentSearch').addEventListener('keydown', event => {
+      if (event.key === 'Enter') { event.preventDefault(); void searchHierarchyParent(); }
+    });
+    $('hierarchyParentResults').addEventListener('click', event => {
+      const button = event.target.closest('[data-parent-id]');
+      if (!button) return;
+      const memberId = button.dataset.parentId;
+      state.selectedParent = {member_id:memberId, name:button.querySelector('strong')?.textContent || memberId};
+      $('hierarchySelectedParent').textContent = `已選擇：${state.selectedParent.name} (${memberId})`;
+    });
+    $('hierarchyEditForm').addEventListener('submit', submitHierarchyChange);
+
     $('detailForm')?.addEventListener(
       'submit',
       saveDetail
@@ -553,6 +650,7 @@ import {
       state.canEdit = permissions.includes(
         UPDATE_PERMISSION
       );
+      state.canEditHierarchy = permissions.includes(HIERARCHY_PERMISSION);
 
       console.log(
         '[ADMIN MEMBERS] Permission verified',

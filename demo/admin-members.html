@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
 <link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
 <link rel="stylesheet" href="./css/app-shell.css">
-<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5a2">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5b">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261117-c5a2"></script>
+<script type="module" src="./js/admin-members.js?v=20261117-c5b"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -31,5 +31,20 @@
 <h3 id="relationshipTitle">組織與服務關係</h3>
 <p id="relationshipMessage" role="status"></p>
 <div id="relationshipContent"></div>
+<div id="hierarchyEditSection" class="hierarchy-edit-section" hidden>
+<button type="button" id="hierarchyEditToggle" class="member-quiet-button">修改直接上線</button>
+<form id="hierarchyEditForm" hidden>
+<h4>修改直接上線</h4>
+<p class="hierarchy-help">目前 C2 API 僅允許移動已有上線的會員，且新上線必須是有效直銷商。根會員不能在此修改。</p>
+<label for="hierarchyParentSearch">搜尋新上線（姓名、會員 ID 或安麗編號）</label>
+<div class="hierarchy-search-controls"><input id="hierarchyParentSearch" type="search" autocomplete="off" placeholder="輸入會員資料"><button type="button" id="hierarchyParentSearchButton">搜尋</button></div>
+<p id="hierarchyParentSearchMessage" role="status"></p>
+<div id="hierarchyParentResults" class="hierarchy-parent-results"></div>
+<p id="hierarchySelectedParent" role="status">尚未選擇新上線</p>
+<label class="hierarchy-checkbox"><input type="checkbox" id="hierarchySyncService"> 同步更新服務者（預設不勾選）</label>
+<label for="hierarchyReason">異動原因</label><textarea id="hierarchyReason" rows="3" maxlength="500" required placeholder="請說明修改原因"></textarea>
+<div class="hierarchy-edit-actions"><button type="submit" id="hierarchySubmit">確認修改</button><button type="button" id="hierarchyCancel" class="member-quiet-button">取消</button></div>
+<p id="hierarchyEditMessage" role="status"></p>
+</form></div>
 </section></section>
 </main><nav aria-label="主要導覽" class="bottom-nav" id="appFooter"></nav></div></body></html>

@@ -125,3 +125,20 @@
 .admin-members-page .audit-raw summary{cursor:pointer;color:#2859d7}
 .admin-members-page .audit-raw pre{background:#f3f6fc;border-radius:7px;padding:8px;margin:5px 0 10px}
 @media(max-width:540px){.admin-members-page #memberPanelAudit .relationship-table-wrap table{min-width:0}.admin-members-page #memberPanelAudit .relationship-table-wrap th:nth-child(2),.admin-members-page #memberPanelAudit .relationship-table-wrap td:nth-child(2){display:none}.admin-members-page .audit-change-row{grid-template-columns:minmax(65px,1fr) minmax(55px,1fr) 12px minmax(55px,1fr);gap:4px;font-size:12px}}
+
+/* C5-D.1.1: combine time and action into one stacked column. */
+.admin-members-page #memberPanelAudit .audit-when-action{vertical-align:top;width:122px;min-width:110px;max-width:135px}
+.admin-members-page #memberPanelAudit .audit-when-action .audit-when,
+.admin-members-page #memberPanelAudit .audit-when-action .audit-action{display:block;overflow-wrap:normal;word-break:normal}
+.admin-members-page #memberPanelAudit .audit-when-action .audit-when{font-size:12px;color:#64748b;line-height:1.45;margin-bottom:7px}
+.admin-members-page #memberPanelAudit .audit-when-action .audit-action{font-weight:600;line-height:1.5}
+.admin-members-page #memberPanelAudit .relationship-table-wrap table{table-layout:auto}
+.admin-members-page #memberPanelAudit .relationship-table-wrap th:last-child,
+.admin-members-page #memberPanelAudit .relationship-table-wrap td:last-child{width:100%;min-width:0}
+@media(max-width:540px){
+  .admin-members-page #memberPanelAudit .relationship-table-wrap th:nth-child(2),
+  .admin-members-page #memberPanelAudit .relationship-table-wrap td:nth-child(2){display:none}
+  .admin-members-page #memberPanelAudit .audit-when-action{width:95px;min-width:88px;max-width:105px}
+  .admin-members-page #memberPanelAudit .audit-when-action .audit-when{font-size:11px}
+  .admin-members-page #memberPanelAudit .audit-when-action .audit-action{font-size:12px}
+}

@@ -306,7 +306,7 @@ import {
     const history = Array.isArray(data.history) ? data.history : [];
     const logs = Array.isArray(data.relationship_audit_logs) ? data.relationship_audit_logs : [];
     const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.distributor_amway_id || '—')}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
-    const auditRows = logs.map(item => `<tr><td>${esc(auditTime(item.created_at))}</td><td>${esc(item.actor_member_id || '—')}</td><td>${esc(auditActionNames[item.action] || item.action || '未知操作')}</td><td>${auditRowsHtml(item)}</td></tr>`).join('');
+    const auditRows = logs.map(item => `<tr><td class="audit-when-action"><span class="audit-when">${esc(auditTime(item.created_at))}</span><span class="audit-action">${esc(auditActionNames[item.action] || item.action || '未知操作')}</span></td><td>${esc(item.actor_member_id || '—')}</td><td>${auditRowsHtml(item)}</td></tr>`).join('');
     state.relationships = data;
     $('relationshipActionBar').hidden = !(state.canEditHierarchy || state.canEditService);
     $('hierarchyEditToggle').hidden = !state.canEditHierarchy;
@@ -324,7 +324,7 @@ import {
       <h4>服務歷史</h4>
       <div class="relationship-table-wrap"><table><thead><tr><th>服務者</th><th>安麗編號</th><th>狀態</th><th>建立時間</th></tr></thead><tbody>${serviceRows || '<tr><td colspan="4">尚無服務歷史</td></tr>'}</tbody></table></div>
       `;
-    $('auditContent').innerHTML = `<div class="relationship-table-wrap"><table><thead><tr><th>時間</th><th>操作人</th><th>動作</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
+    $('auditContent').innerHTML = `<div class="relationship-table-wrap"><table><thead><tr><th>時間／動作</th><th>操作人</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="3">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
     $('auditMessage').textContent = '';
   }
 

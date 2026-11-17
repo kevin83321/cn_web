@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
 <link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
 <link rel="stylesheet" href="./css/app-shell.css">
-<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5b-layout">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5c">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261117-c5b-layout"></script>
+<script type="module" src="./js/admin-members.js?v=20261117-c5c"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -42,7 +42,7 @@
 <button type="button" id="hierarchyEditToggle" class="member-quiet-button">修改直接上線</button>
 <form id="hierarchyEditForm" hidden>
 <h4>修改直接上線</h4>
-<p class="hierarchy-help">目前 C2 API 僅允許移動已有上線的會員，且新上線必須是有效直銷商。根會員不能在此修改。</p>
+<p class="hierarchy-help">新上線必須是有效直銷商；不能指定自己或自己的下線。</p>
 <label for="hierarchyParentSearch">搜尋新上線（姓名、會員 ID 或安麗編號）</label>
 <div class="hierarchy-search-controls"><input id="hierarchyParentSearch" type="search" autocomplete="off" placeholder="輸入會員資料"><button type="button" id="hierarchyParentSearchButton" class="hierarchy-search-button">搜尋</button></div>
 <p id="hierarchyParentSearchMessage" role="status"></p>
@@ -53,6 +53,23 @@
 <div class="hierarchy-edit-actions"><button type="submit" id="hierarchySubmit" class="hierarchy-primary-button">確認修改</button><button type="button" id="hierarchyCancel" class="member-quiet-button">取消</button></div>
 <p id="hierarchyEditMessage" role="status"></p>
 </form></div>
+<div id="serviceEditSection" class="hierarchy-edit-section" hidden>
+<div class="service-actions"><button type="button" id="serviceEditToggle" class="member-quiet-button">指派／更換服務者</button><button type="button" id="serviceRemoveToggle" class="member-quiet-button" hidden>解除服務者</button></div>
+<form id="serviceEditForm" hidden>
+<h4 id="serviceEditTitle">指派服務者</h4>
+<p class="hierarchy-help">服務關係與組織上線獨立管理；服務者須為有效直銷商。</p>
+<div id="serviceSearchArea">
+<label for="serviceSearch">搜尋服務者（姓名、會員 ID 或安麗編號）</label>
+<div class="hierarchy-search-controls"><input id="serviceSearch" type="search" autocomplete="off" placeholder="輸入會員資料"><button type="button" id="serviceSearchButton" class="hierarchy-search-button">搜尋</button></div>
+<p id="serviceSearchMessage" role="status"></p>
+<div id="serviceSearchResults" class="hierarchy-parent-results"></div>
+<p id="serviceSelected" class="service-selected" role="status">尚未選擇服務者</p>
+</div>
+<label for="serviceReason">異動原因</label><textarea id="serviceReason" rows="3" maxlength="500" required placeholder="請說明異動原因"></textarea>
+<div class="hierarchy-edit-actions"><button type="submit" id="serviceSubmit" class="hierarchy-primary-button">確認修改</button><button type="button" id="serviceCancel" class="member-quiet-button">取消</button></div>
+<p id="serviceEditMessage" role="status"></p>
+</form>
+</div>
 </section></div>
 <div id="memberPanelAudit" role="tabpanel" aria-labelledby="memberTabAudit" hidden>
 <section class="relationship-panel" aria-labelledby="auditTitle"><h3 id="auditTitle">關係異動紀錄（最近 50 筆）</h3>

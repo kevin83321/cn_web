@@ -18,6 +18,10 @@ import {
     authorized: false,
     canEdit: false,
     canEditHierarchy: false,
+    canEditService: false,
+    selectedServicer: null,
+    serviceMode: 'assign',
+    serviceSearchRequestId: 0,
     relationships: null,
     selectedParent: null,
     parentSearchRequestId: 0,
@@ -29,6 +33,7 @@ import {
   const READ_PERMISSION = 'admin.members.read';
   const UPDATE_PERMISSION = 'admin.members.update';
   const HIERARCHY_PERMISSION = 'admin.members.hierarchy.update';
+  const SERVICE_PERMISSION = 'admin.members.service.update';
 
   const roleNames = {
     distributor: '直銷商',
@@ -253,6 +258,8 @@ import {
     const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
     state.relationships = data;
     $('hierarchyEditSection').hidden = !state.canEditHierarchy;
+    $('serviceEditSection').hidden = !state.canEditService;
+    $('serviceRemoveToggle').hidden = !data.current_servicer;
     $('relationshipContent').innerHTML = `
       <dl class="relationship-fields">
         ${relationshipField('會員安麗編號', data.member?.amway_id || '—')}
@@ -273,6 +280,7 @@ import {
     $('relationshipPanel').hidden = false;
     $('relationshipContent').replaceChildren();
     $('hierarchyEditSection').hidden = true;
+    $('serviceEditSection').hidden = true;
     $('relationshipMessage').textContent = '正在載入關係資料…';
     $('auditMessage').textContent = '正在載入異動紀錄…';
     try {
@@ -292,6 +300,7 @@ import {
 
   function resetHierarchyEditor() {
     state.relationships = null;
+    resetServiceEditor();
     state.selectedParent = null;
     state.parentSearchRequestId++;
     $('hierarchyEditForm').hidden = true;
@@ -303,6 +312,92 @@ import {
     $('hierarchySyncService').checked = false;
     $('hierarchyReason').value = '';
     $('hierarchyEditMessage').textContent = '';
+  }
+
+  function resetServiceEditor() {
+    state.serviceSearchRequestId++;
+    state.selectedServicer = null;
+    state.serviceMode = 'assign';
+    $('serviceEditForm').hidden = true;
+    $('serviceEditSection').hidden = true;
+    $('serviceSearch').value = '';
+    $('serviceSearchResults').replaceChildren();
+    $('serviceSearchMessage').textContent = '';
+    $('serviceSelected').textContent = '尚未選擇服務者';
+    $('serviceReason').value = '';
+    $('serviceEditMessage').textContent = '';
+    $('serviceSearchArea').hidden = false;
+  }
+
+  function openServiceEditor(mode) {
+    state.serviceSearchRequestId++;
+    state.selectedServicer = null;
+    state.serviceMode = mode;
+    $('hierarchyEditForm').hidden = true;
+    $('serviceEditForm').hidden = false;
+    $('serviceEditTitle').textContent = mode === 'remove' ? '解除服務者' :
+      (state.relationships?.current_servicer ? '更換服務者' : '指派服務者');
+    $('serviceSearchArea').hidden = mode === 'remove';
+    $('serviceSearch').value = '';
+    $('serviceSearchResults').replaceChildren();
+    $('serviceSearchMessage').textContent = '';
+    $('serviceSelected').textContent = '尚未選擇服務者';
+    $('serviceReason').value = '';
+    $('serviceEditMessage').textContent = '';
+    $('serviceSubmit').textContent = mode === 'remove' ? '確認解除' : '確認修改';
+  }
+
+  async function searchServicer() {
+    const query = $('serviceSearch').value.trim();
+    const requestId = ++state.serviceSearchRequestId;
+    state.selectedServicer = null;
+    $('serviceSelected').textContent = '尚未選擇服務者';
+    $('serviceSearchResults').replaceChildren();
+    if (!query) { $('serviceSearchMessage').textContent = '請輸入搜尋條件'; return; }
+    $('serviceSearchButton').disabled = true;
+    $('serviceSearchMessage').textContent = '搜尋中…';
+    try {
+      const data = await api('/api/admin/members?' + new URLSearchParams({q:query,page:'1',page_size:'20'}));
+      if (requestId !== state.serviceSearchRequestId) return;
+      const candidates = (data.items || []).filter(m => m.role === 'distributor' && m.status === 'active');
+      $('serviceSearchResults').innerHTML = candidates.map(m => `<button type="button" class="hierarchy-parent-choice" data-servicer-id="${esc(m.member_id)}"><strong>${esc(m.name)}</strong><small>${esc(m.member_id)}${m.amway_id ? ' · ' + esc(m.amway_id) : ''}</small></button>`).join('') || '<p>此頁搜尋結果沒有符合條件的有效直銷商</p>';
+      $('serviceSearchMessage').textContent = `顯示 ${candidates.length} 位候選人（最多查詢 20 筆）`;
+    } catch (error) {
+      if (requestId === state.serviceSearchRequestId) $('serviceSearchMessage').textContent = errorText(error);
+    } finally {
+      if (requestId === state.serviceSearchRequestId) $('serviceSearchButton').disabled = false;
+    }
+  }
+
+  async function submitServiceChange(event) {
+    event.preventDefault();
+    const target = state.selected;
+    const current = state.relationships?.current_servicer;
+    const next = state.selectedServicer;
+    const mode = state.serviceMode;
+    const reason = $('serviceReason').value.trim();
+    if (!state.canEditService || !target) return;
+    if (mode !== 'remove' && !next) { $('serviceEditMessage').textContent = '請先選擇服務者'; return; }
+    if (mode !== 'remove' && current?.member_id === next.member_id) { $('serviceEditMessage').textContent = '新服務者與目前相同'; return; }
+    if (mode === 'remove' && !current) { $('serviceEditMessage').textContent = '目前沒有服務者'; return; }
+    if (!reason || reason.length > 500) { $('serviceEditMessage').textContent = '請填寫 1～500 字的異動原因'; return; }
+    const action = mode === 'remove' ? '解除' : (current ? '更換' : '指派');
+    const prompt = `確認${action} ${target.name} (${target.member_id}) 的服務者？\n目前：${current ? memberLabel(current) : '無'}\n新的：${mode === 'remove' ? '無' : memberLabel(next)}\n組織上線：不變\n原因：${reason}`;
+    if (!window.confirm(prompt)) return;
+    const button = $('serviceSubmit');
+    const requestId = state.detailRequestId;
+    button.disabled = true;
+    $('serviceEditMessage').textContent = '正在更新服務關係…';
+    try {
+      const path = '/api/admin/members/' + encodeURIComponent(target.member_id) + '/service';
+      const data = await api(path, {method:mode === 'remove' ? 'DELETE' : 'PATCH',body:mode === 'remove' ? {reason} : {distributor_member_id:next.member_id,reason}});
+      if (requestId !== state.detailRequestId || state.selected?.member_id !== target.member_id) return;
+      $('serviceEditMessage').textContent = data.changed === false ? '服務關係沒有變更' : '服務關係已更新';
+      $('serviceEditForm').hidden = true;
+      await loadRelationships(target.member_id, requestId);
+    } catch (error) {
+      if (requestId === state.detailRequestId) $('serviceEditMessage').textContent = errorText(error);
+    } finally { button.disabled = false; }
   }
 
   async function searchHierarchyParent() {
@@ -585,6 +680,20 @@ import {
       }
     });
 
+    $('serviceEditToggle').addEventListener('click', () => openServiceEditor('assign'));
+    $('serviceRemoveToggle').addEventListener('click', () => openServiceEditor('remove'));
+    $('serviceCancel').addEventListener('click', () => { $('serviceEditForm').hidden = true; });
+    $('serviceSearchButton').addEventListener('click', searchServicer);
+    $('serviceSearch').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); void searchServicer(); } });
+    $('serviceSearchResults').addEventListener('click', event => {
+      const button = event.target.closest('[data-servicer-id]');
+      if (!button) return;
+      const id = button.dataset.servicerId;
+      state.selectedServicer = {member_id:id,name:button.querySelector('strong')?.textContent || id};
+      $('serviceSelected').textContent = `已選擇：${state.selectedServicer.name} (${id})`;
+    });
+    $('serviceEditForm').addEventListener('submit', submitServiceChange);
+
     $('hierarchyEditToggle').addEventListener('click', () => {
       $('hierarchyEditForm').hidden = !$('hierarchyEditForm').hidden;
       $('hierarchyEditMessage').textContent = '';
@@ -685,6 +794,7 @@ import {
         UPDATE_PERMISSION
       );
       state.canEditHierarchy = permissions.includes(HIERARCHY_PERMISSION);
+      state.canEditService = permissions.includes(SERVICE_PERMISSION);
 
       console.log(
         '[ADMIN MEMBERS] Permission verified',

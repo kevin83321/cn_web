@@ -80,3 +80,23 @@
 .admin-members-page #hierarchyEditForm .hierarchy-edit-actions button{min-width:0;width:100%;min-height:44px;margin:0;border-radius:10px;font-weight:700;font-size:14px}
 .admin-members-page #hierarchyEditForm .hierarchy-primary-button{border:1px solid #2859d7;background:#2859d7;color:#fff}
 @media(max-width:420px){.admin-members-page #hierarchyEditForm{padding:12px 10px;gap:10px}.admin-members-page #hierarchyEditForm .hierarchy-search-controls{grid-template-columns:minmax(0,1fr) 66px}}
+
+/* C5-C: service editor shares the tested mobile hierarchy form layout */
+.admin-members-page .service-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-members-page #serviceEditForm{display:flex;flex-direction:column;gap:12px;min-width:0;margin-top:12px;padding:14px 12px;box-sizing:border-box;border:1px solid #dce5f4;border-radius:14px;background:#f8faff}
+.admin-members-page #serviceEditForm>*{min-width:0;max-width:100%;box-sizing:border-box}
+.admin-members-page #serviceEditForm h4{margin:0;font-size:16px}
+.admin-members-page #serviceEditForm label{display:block;font-size:13px;font-weight:600}
+.admin-members-page #serviceEditForm input[type="search"],.admin-members-page #serviceEditForm textarea{width:100%;min-width:0;border:1px solid #dce5f4;border-radius:10px;background:#fff;padding:10px;font:inherit;box-sizing:border-box}
+.admin-members-page #serviceEditForm .hierarchy-search-controls{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:8px;align-items:stretch}
+.admin-members-page #serviceEditForm .hierarchy-search-controls input{height:44px;margin:0}
+.admin-members-page #serviceEditForm .hierarchy-search-button{height:44px;padding:0 8px;border:1px solid #dce5f4;border-radius:10px;background:#fff;color:#2859d7;font-size:14px;font-weight:700}
+.admin-members-page #serviceSearchResults:empty,.admin-members-page #serviceSearchMessage:empty,.admin-members-page #serviceEditMessage:empty{display:none}
+.admin-members-page #serviceSearchResults{max-height:180px;min-height:0;overflow-y:auto}
+.admin-members-page #serviceSelected{margin:0;padding:10px 12px;background:#fff;border:1px solid #dce5f4;border-radius:10px;font-size:13px;overflow-wrap:anywhere}
+.admin-members-page #serviceEditForm textarea{min-height:86px;resize:vertical}
+.admin-members-page #serviceEditForm .hierarchy-edit-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.admin-members-page #serviceEditForm .hierarchy-edit-actions button{min-width:0;width:100%;min-height:44px;border-radius:10px;font-weight:700}
+.admin-members-page #serviceEditForm .hierarchy-primary-button{border:1px solid #2859d7;background:#2859d7;color:#fff}
+.admin-members-page #serviceEditForm #serviceSearchMessage,.admin-members-page #serviceEditForm #serviceEditMessage{font-size:12px;overflow-wrap:anywhere}
+@media(max-width:420px){.admin-members-page #serviceEditForm{padding:12px 10px}.admin-members-page #serviceEditForm .hierarchy-search-controls{grid-template-columns:minmax(0,1fr) 66px}}

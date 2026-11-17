@@ -100,3 +100,13 @@
 .admin-members-page #serviceEditForm .hierarchy-primary-button{border:1px solid #2859d7;background:#2859d7;color:#fff}
 .admin-members-page #serviceEditForm #serviceSearchMessage,.admin-members-page #serviceEditForm #serviceEditMessage{font-size:12px;overflow-wrap:anywhere}
 @media(max-width:420px){.admin-members-page #serviceEditForm{padding:12px 10px}.admin-members-page #serviceEditForm .hierarchy-search-controls{grid-template-columns:minmax(0,1fr) 66px}}
+
+/* C5-C.1: compact, horizontal relationship management actions */
+.admin-members-page .relationship-action-bar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #dce5f4;width:100%;box-sizing:border-box}
+.admin-members-page .relationship-action-bar[hidden]{display:none}
+.admin-members-page .relationship-action-bar button{min-width:0;width:100%;min-height:42px;margin:0;padding:8px 3px;border-radius:10px;font-size:12px;line-height:1.35;white-space:normal;overflow-wrap:anywhere;box-sizing:border-box}
+.admin-members-page .relationship-action-bar button[hidden]{display:none}
+@media(max-width:390px){.admin-members-page .relationship-action-bar{gap:5px}.admin-members-page .relationship-action-bar button{font-size:11px;padding:7px 2px}}
+
+/* Hide inactive edit panels while keeping the shared action bar visible. */
+.admin-members-page .hierarchy-edit-section:not(:has(form:not([hidden]))){display:none}

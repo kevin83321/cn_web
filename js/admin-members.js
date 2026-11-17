@@ -257,9 +257,10 @@ import {
     const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.distributor_amway_id || '—')}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
     const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
     state.relationships = data;
-    $('hierarchyEditSection').hidden = !state.canEditHierarchy;
-    $('serviceEditSection').hidden = !state.canEditService;
-    $('serviceRemoveToggle').hidden = !data.current_servicer;
+    $('relationshipActionBar').hidden = !(state.canEditHierarchy || state.canEditService);
+    $('hierarchyEditToggle').hidden = !state.canEditHierarchy;
+    $('serviceEditToggle').hidden = !state.canEditService;
+    $('serviceRemoveToggle').hidden = !state.canEditService || !data.current_servicer;
     $('relationshipContent').innerHTML = `
       <dl class="relationship-fields">
         ${relationshipField('會員安麗編號', data.member?.amway_id || '—')}
@@ -281,6 +282,7 @@ import {
     $('relationshipContent').replaceChildren();
     $('hierarchyEditSection').hidden = true;
     $('serviceEditSection').hidden = true;
+    $('relationshipActionBar').hidden = true;
     $('relationshipMessage').textContent = '正在載入關係資料…';
     $('auditMessage').textContent = '正在載入異動紀錄…';
     try {
@@ -334,6 +336,7 @@ import {
     state.selectedServicer = null;
     state.serviceMode = mode;
     $('hierarchyEditForm').hidden = true;
+    $('serviceEditSection').hidden = false;
     $('serviceEditForm').hidden = false;
     $('serviceEditTitle').textContent = mode === 'remove' ? '解除服務者' :
       (state.relationships?.current_servicer ? '更換服務者' : '指派服務者');
@@ -695,6 +698,7 @@ import {
     $('serviceEditForm').addEventListener('submit', submitServiceChange);
 
     $('hierarchyEditToggle').addEventListener('click', () => {
+      $('hierarchyEditSection').hidden = false;
       $('hierarchyEditForm').hidden = !$('hierarchyEditForm').hidden;
       $('hierarchyEditMessage').textContent = '';
     });

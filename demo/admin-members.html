@@ -4,10 +4,10 @@
 <meta name="theme-color" content="#f4f7fc"><title>全部會員 · CN</title>
 <link rel="icon" href="./asset/favicon.ico"><link rel="stylesheet" href="./css/admin.css">
 <link rel="stylesheet" href="./css/app-shell.css">
-<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5c">
+<link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5c-horizontal">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261117-c5c"></script>
+<script type="module" src="./js/admin-members.js?v=20261117-c5c-horizontal"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -38,8 +38,12 @@
 <h3 id="relationshipTitle">組織與服務關係</h3>
 <p id="relationshipMessage" role="status"></p>
 <div id="relationshipContent"></div>
+<div id="relationshipActionBar" class="relationship-action-bar" hidden>
+<button type="button" id="hierarchyEditToggle" class="member-quiet-button" hidden>修改上線</button>
+<button type="button" id="serviceEditToggle" class="member-quiet-button" hidden>指派／更換</button>
+<button type="button" id="serviceRemoveToggle" class="member-quiet-button" hidden>解除服務</button>
+</div>
 <div id="hierarchyEditSection" class="hierarchy-edit-section" hidden>
-<button type="button" id="hierarchyEditToggle" class="member-quiet-button">修改直接上線</button>
 <form id="hierarchyEditForm" hidden>
 <h4>修改直接上線</h4>
 <p class="hierarchy-help">新上線必須是有效直銷商；不能指定自己或自己的下線。</p>
@@ -54,7 +58,6 @@
 <p id="hierarchyEditMessage" role="status"></p>
 </form></div>
 <div id="serviceEditSection" class="hierarchy-edit-section" hidden>
-<div class="service-actions"><button type="button" id="serviceEditToggle" class="member-quiet-button">指派／更換服務者</button><button type="button" id="serviceRemoveToggle" class="member-quiet-button" hidden>解除服務者</button></div>
 <form id="serviceEditForm" hidden>
 <h4 id="serviceEditTitle">指派服務者</h4>
 <p class="hierarchy-help">服務關係與組織上線獨立管理；服務者須為有效直銷商。</p>

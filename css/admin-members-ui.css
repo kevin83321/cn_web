@@ -113,3 +113,15 @@
 .admin-members-page #serviceEditSection[hidden],
 .admin-members-page #hierarchyEditForm[hidden],
 .admin-members-page #serviceEditForm[hidden]{display:none!important}
+
+/* C5-D.1 — audit before/after display */
+.admin-members-page .audit-entry{min-width:0;line-height:1.5}
+.admin-members-page .audit-change-row{display:grid;grid-template-columns:minmax(75px,1fr) minmax(70px,1fr) 16px minmax(70px,1fr);gap:6px;align-items:start;padding:6px 0;border-bottom:1px solid #edf1f7;overflow-wrap:anywhere}
+.admin-members-page .audit-change-row strong{font-weight:600}
+.admin-members-page .audit-change-arrow{color:#64748b}
+.admin-members-page .audit-reason{margin:9px 0 4px;overflow-wrap:anywhere}
+.admin-members-page .audit-muted{color:#64748b;font-size:12px;margin:6px 0}
+.admin-members-page .audit-raw{margin-top:10px}
+.admin-members-page .audit-raw summary{cursor:pointer;color:#2859d7}
+.admin-members-page .audit-raw pre{background:#f3f6fc;border-radius:7px;padding:8px;margin:5px 0 10px}
+@media(max-width:540px){.admin-members-page #memberPanelAudit .relationship-table-wrap table{min-width:0}.admin-members-page #memberPanelAudit .relationship-table-wrap th:nth-child(2),.admin-members-page #memberPanelAudit .relationship-table-wrap td:nth-child(2){display:none}.admin-members-page .audit-change-row{grid-template-columns:minmax(65px,1fr) minmax(55px,1fr) 12px minmax(55px,1fr);gap:4px;font-size:12px}}

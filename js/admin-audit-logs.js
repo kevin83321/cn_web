@@ -40,6 +40,12 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     return p.toString();
   }
   
+  const auditActionNames = {
+    admin_member_hierarchy_update: '修改組織上線',
+    admin_member_service_update: '指派／更換服務者',
+    admin_member_service_remove: '解除服務者'
+  };
+
   function itemCard(r) {
     const changes = Array.isArray(r.changes) ? r.changes : [];
 
@@ -182,7 +188,7 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         const previous = select.value;
         select.replaceChildren(new Option(id === 'actor' ? '全部操作人員' : '全部操作類型', ''));
         for (const value of values) {
-          if (typeof value === 'string' && value) select.add(new Option(value, value));
+          if (typeof value === 'string' && value) select.add(new Option(auditActionNames[value] || value, value));
         }
         if ([...select.options].some(o => o.value === previous)) select.value = previous;
       }

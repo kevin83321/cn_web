@@ -251,11 +251,62 @@ import {
     return member ? `${member.name || '未命名'} (${member.member_id})${member.amway_id ? ' · 安麗編號：' + member.amway_id : ''}` : '無';
   }
 
+  // C5-D.1: readable, escaped audit history; unknown fields remain visible in raw JSON.
+  const auditActionNames = {
+    admin_member_hierarchy_update: '修改組織上線',
+    admin_member_service_update: '指派／更換服務者',
+    admin_member_service_remove: '解除服務者'
+  };
+  const auditFieldNames = {
+    parent_member_id: '直接上線',
+    service_distributor_member_id: '服務者',
+    service_id: '服務紀錄 ID',
+    sync_service: '同步更新服務者',
+    reason: '異動原因'
+  };
+  function auditObject(raw) {
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw;
+    if (typeof raw !== 'string' || !raw.trim()) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+    } catch { return null; }
+  }
+  function auditValue(value) {
+    if (value === null || value === undefined || value === '') return '無';
+    if (typeof value === 'boolean') return value ? '是' : '否';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  }
+  function auditTime(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
+  }
+  function auditRowsHtml(log) {
+    const before = auditObject(log.before_value);
+    const after = auditObject(log.after_value);
+    const keys = [...new Set([...Object.keys(before || {}), ...Object.keys(after || {})])]
+      .filter(key => key !== 'reason' && key !== 'sync_service');
+    const changes = keys.filter(key => JSON.stringify(before?.[key] ?? null) !== JSON.stringify(after?.[key] ?? null));
+    const lines = changes.map(key => `<div class="audit-change-row"><strong>${esc(auditFieldNames[key] || key)}</strong><span>${esc(auditValue(before?.[key]))}</span><span class="audit-change-arrow">→</span><span>${esc(auditValue(after?.[key]))}</span></div>`).join('');
+    const reason = after?.reason ?? before?.reason;
+    const sync = after?.sync_service;
+    const rawBefore = typeof log.before_value === 'string' ? log.before_value : JSON.stringify(log.before_value ?? null);
+    const rawAfter = typeof log.after_value === 'string' ? log.after_value : JSON.stringify(log.after_value ?? null);
+    return `<div class="audit-entry">
+      ${lines || '<p class="audit-muted">沒有可辨識的欄位變更</p>'}
+      ${reason != null && reason !== '' ? `<p class="audit-reason"><strong>異動原因：</strong>${esc(auditValue(reason))}</p>` : ''}
+      ${sync !== undefined ? `<p class="audit-muted">同步服務者：${esc(auditValue(sync))}</p>` : ''}
+      <details class="audit-raw"><summary>檢視原始紀錄</summary><strong>異動前</strong><pre>${esc(rawBefore)}</pre><strong>異動後</strong><pre>${esc(rawAfter)}</pre></details>
+    </div>`;
+  }
+
   function renderRelationships(data) {
     const history = Array.isArray(data.history) ? data.history : [];
     const logs = Array.isArray(data.relationship_audit_logs) ? data.relationship_audit_logs : [];
     const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.distributor_amway_id || '—')}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
-    const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
+    const auditRows = logs.map(item => `<tr><td>${esc(auditTime(item.created_at))}</td><td>${esc(item.actor_member_id || '—')}</td><td>${esc(auditActionNames[item.action] || item.action || '未知操作')}</td><td>${auditRowsHtml(item)}</td></tr>`).join('');
     state.relationships = data;
     $('relationshipActionBar').hidden = !(state.canEditHierarchy || state.canEditService);
     $('hierarchyEditToggle').hidden = !state.canEditHierarchy;

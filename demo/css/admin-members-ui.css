@@ -109,4 +109,7 @@
 @media(max-width:390px){.admin-members-page .relationship-action-bar{gap:5px}.admin-members-page .relationship-action-bar button{font-size:11px;padding:7px 2px}}
 
 /* Hide inactive edit panels while keeping the shared action bar visible. */
-.admin-members-page .hierarchy-edit-section:not(:has(form:not([hidden]))){display:none}
+.admin-members-page #hierarchyEditSection[hidden],
+.admin-members-page #serviceEditSection[hidden],
+.admin-members-page #hierarchyEditForm[hidden],
+.admin-members-page #serviceEditForm[hidden]{display:none!important}

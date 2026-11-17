@@ -336,6 +336,7 @@ import {
     state.selectedServicer = null;
     state.serviceMode = mode;
     $('hierarchyEditForm').hidden = true;
+    $('hierarchyEditSection').hidden = true;
     $('serviceEditSection').hidden = false;
     $('serviceEditForm').hidden = false;
     $('serviceEditTitle').textContent = mode === 'remove' ? '解除服務者' :
@@ -397,6 +398,7 @@ import {
       if (requestId !== state.detailRequestId || state.selected?.member_id !== target.member_id) return;
       $('serviceEditMessage').textContent = data.changed === false ? '服務關係沒有變更' : '服務關係已更新';
       $('serviceEditForm').hidden = true;
+      $('serviceEditSection').hidden = true;
       await loadRelationships(target.member_id, requestId);
     } catch (error) {
       if (requestId === state.detailRequestId) $('serviceEditMessage').textContent = errorText(error);
@@ -449,6 +451,7 @@ import {
       if (requestId !== state.detailRequestId) return;
       $('hierarchyEditMessage').textContent = data.changed === false ? '組織關係沒有變更' : '組織關係已更新';
       $('hierarchyEditForm').hidden = true;
+      $('hierarchyEditSection').hidden = true;
       await loadRelationships(target.member_id, requestId);
       await load();
     } catch (error) {
@@ -685,7 +688,10 @@ import {
 
     $('serviceEditToggle').addEventListener('click', () => openServiceEditor('assign'));
     $('serviceRemoveToggle').addEventListener('click', () => openServiceEditor('remove'));
-    $('serviceCancel').addEventListener('click', () => { $('serviceEditForm').hidden = true; });
+    $('serviceCancel').addEventListener('click', () => {
+      $('serviceEditForm').hidden = true;
+      $('serviceEditSection').hidden = true;
+    });
     $('serviceSearchButton').addEventListener('click', searchServicer);
     $('serviceSearch').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); void searchServicer(); } });
     $('serviceSearchResults').addEventListener('click', event => {
@@ -698,11 +704,17 @@ import {
     $('serviceEditForm').addEventListener('submit', submitServiceChange);
 
     $('hierarchyEditToggle').addEventListener('click', () => {
-      $('hierarchyEditSection').hidden = false;
-      $('hierarchyEditForm').hidden = !$('hierarchyEditForm').hidden;
+      const shouldOpen = $('hierarchyEditForm').hidden;
+      $('serviceEditForm').hidden = true;
+      $('serviceEditSection').hidden = true;
+      $('hierarchyEditForm').hidden = !shouldOpen;
+      $('hierarchyEditSection').hidden = !shouldOpen;
       $('hierarchyEditMessage').textContent = '';
     });
-    $('hierarchyCancel').addEventListener('click', () => { $('hierarchyEditForm').hidden = true; });
+    $('hierarchyCancel').addEventListener('click', () => {
+      $('hierarchyEditForm').hidden = true;
+      $('hierarchyEditSection').hidden = true;
+    });
     $('hierarchyParentSearchButton').addEventListener('click', searchHierarchyParent);
     $('hierarchyParentSearch').addEventListener('keydown', event => {
       if (event.key === 'Enter') { event.preventDefault(); void searchHierarchyParent(); }

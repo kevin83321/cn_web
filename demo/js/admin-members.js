@@ -252,7 +252,7 @@ import {
     const serviceRows = history.map(item => `<tr><td>${esc(item.distributor_name || item.distributor_member_id)}</td><td>${esc(item.distributor_amway_id || '—')}</td><td>${esc(item.status)}</td><td>${esc(item.created_at)}</td></tr>`).join('');
     const auditRows = logs.map(item => `<tr><td>${esc(item.created_at)}</td><td>${esc(item.actor_member_id)}</td><td>${esc(item.action)}</td><td><details><summary>查看異動內容</summary><pre>${esc(item.before_value)}</pre><pre>${esc(item.after_value)}</pre></details></td></tr>`).join('');
     state.relationships = data;
-    $('hierarchyEditSection').hidden = !state.canEditHierarchy || !data.direct_upline;
+    $('hierarchyEditSection').hidden = !state.canEditHierarchy;
     $('relationshipContent').innerHTML = `
       <dl class="relationship-fields">
         ${relationshipField('會員安麗編號', data.member?.amway_id || '—')}
@@ -334,11 +334,11 @@ import {
     const next = state.selectedParent;
     const reason = $('hierarchyReason').value.trim();
     const sync = $('hierarchySyncService').checked;
-    if (!state.canEditHierarchy || !target || !current) return;
+    if (!state.canEditHierarchy || !target) return;
     if (!next) { $('hierarchyEditMessage').textContent = '請先選擇新的直接上線'; return; }
-    if (next.member_id === current.member_id) { $('hierarchyEditMessage').textContent = '新上線與目前相同'; return; }
+    if (next.member_id === current?.member_id) { $('hierarchyEditMessage').textContent = '新上線與目前相同'; return; }
     if (!reason || reason.length > 500) { $('hierarchyEditMessage').textContent = '請填寫 1～500 字的異動原因'; return; }
-    const text = `確認修改 ${target.name} (${target.member_id}) 的直接上線？\n目前：${current.name} (${current.member_id})\n新的：${next.name} (${next.member_id})\n同步服務者：${sync ? '是' : '否'}\n原因：${reason}`;
+    const text = `確認修改 ${target.name} (${target.member_id}) 的直接上線？\n目前：${current ? `${current.name} (${current.member_id})` : "無（根會員）"}\n新的：${next.name} (${next.member_id})\n同步服務者：${sync ? '是' : '否'}\n原因：${reason}`;
     if (!window.confirm(text)) return;
     const button = $('hierarchySubmit');
     const requestId = state.detailRequestId;

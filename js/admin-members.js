@@ -1,13 +1,7 @@
 
 'use strict';
 
-import {
-  $,
-  esc,
-  api,
-  getToken,
-  errors
-} from './admin-common.js';
+import { $, esc, api, getToken, errors } from './admin-common.js';
 
 (() => {
   const state = {
@@ -927,9 +921,8 @@ import {
               }
             }
           );
-
-          roleSaved = true;
-        }
+        roleSaved = true;
+        
         await api(
           '/api/admin/members/' +
             encodeURIComponent(memberId) +
@@ -946,17 +939,9 @@ import {
       }
 
       // 重新取得最新會員資料
-      const refreshed = await api(
-        '/api/admin/members/' +
-          encodeURIComponent(memberId)
-      );
+      const refreshed = await api('/api/admin/members/' + encodeURIComponent(memberId));
 
-      if (
-        requestId !== state.detailRequestId ||
-        state.selected?.member_id !== memberId
-      ) {
-        return;
-      }
+      if (requestId !== state.detailRequestId || state.selected?.member_id !== memberId) { return; }
 
       if (!refreshed.member) {
         throw new Error('INVALID_RESPONSE');

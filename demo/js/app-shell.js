@@ -155,6 +155,35 @@ window.CNAuthGuardReady = (() => {
     </a>
   `;
 
+  const ADMIN_DESTINATIONS = [
+    ['admin.members.read', './admin-members.html'],
+    ['admin.audit.read', './admin-audit-logs.html'],
+    ['admin.roles.catalog.read', './admin-roles.html']
+  ];
+
+  window.CNAppShell = window.CNAppShell || {};
+
+  window.CNAppShell.setPermissions = function (permissions) {
+    const adminLink = document.querySelector(
+      '#appFooter [data-nav="admin"]'
+    );
+
+    if (!adminLink) return;
+
+    const granted = new Set(
+      Array.isArray(permissions) ? permissions : []
+    );
+
+    const destination = ADMIN_DESTINATIONS.find(
+      ([permission]) => granted.has(permission)
+    );
+
+    adminLink.hidden = !destination;
+
+    if (destination) {
+      adminLink.href = destination[1];
+    }
+  };
   // ============================================================
   // Navigation State
   // ============================================================

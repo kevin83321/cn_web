@@ -145,10 +145,10 @@ window.CNAuthGuardReady = (() => {
       <small>我的</small>
     </a>
     <a
-      href="./admin-members.html"
+      href="./admin.html"
       class="nav-item"
       data-nav="admin"
-      aria-label="管理後台"
+      aria-label="管理中心"
       hidden
     >
       <span>⚙</span>
@@ -185,6 +185,64 @@ window.CNAuthGuardReady = (() => {
       adminLink.href = destination[1];
     }
   };
+
+  // ============================================================
+  // Shared Footer Permissions
+  // ============================================================
+
+  async function syncFooterPermissions() {
+    const adminLink = nav.querySelector('[data-nav="admin"]');
+
+    if (!adminLink) return;
+
+    // 權限尚未確認前，預設隱藏
+    adminLink.hidden = true;
+
+    try {
+      // 等待 Auth Guard 安裝完成
+      if (window.CNAuthGuardReady) {
+        await window.CNAuthGuardReady;
+      }
+
+      // 取得 API 設定與登入 Token
+      const { CONFIG } = await import('./config.js');
+
+      const token =
+        localStorage.getItem(CONFIG.TOKEN_KEY) ||
+        sessionStorage.getItem(CONFIG.TOKEN_KEY);
+
+      if (!token) return;
+
+      const response = await fetch(
+        CONFIG.API_BASE + '/api/auth/permissions',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          cache: 'no-store'
+        }
+      );
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      if (!data.success || !Array.isArray(data.permissions)) {
+        return;
+      }
+
+      window.CNAppShell.setPermissions(data.permissions);
+
+    } catch (error) {
+      console.error('[APP SHELL] Footer permission sync failed:', error);
+      adminLink.hidden = true;
+    }
+  }
+
+  // 所有頁面都同步 Footer 權限
+  void syncFooterPermissions();
+
   // ============================================================
   // Navigation State
   // ============================================================
@@ -194,12 +252,20 @@ window.CNAuthGuardReady = (() => {
       page === 'home' &&
       location.hash === '#account';
 
+    const activeNav =
+      page === 'home'
+        ? (accountSelected ? 'account' : 'home')
+        : (
+            location.pathname
+              .split('/')
+              .pop()
+              .startsWith('admin')
+              ? 'admin'
+              : ''
+          );
+
     nav.querySelectorAll('[data-nav]').forEach(link => {
-      const active =
-        page === 'home' &&
-        link.dataset.nav === (
-          accountSelected ? 'account' : 'home'
-        );
+      const active = link.dataset.nav === activeNav;
 
       link.classList.toggle('active', active);
 

@@ -502,6 +502,7 @@ import { CONFIG } from './config.js';
     }
 
     state.permissions = data.permissions;
+    window.CNAppShell?.setPermissions(state.permissions);
   }
 
   // ============================================================

@@ -143,6 +143,16 @@ window.CNAuthGuardReady = (() => {
       <span>◯</span>
       <small>我的</small>
     </a>
+    <a
+      href="./admin-members.html"
+      class="nav-item"
+      data-nav="admin"
+      aria-label="管理後台"
+      hidden
+    >
+      <span>⚙</span>
+      <small>管理</small>
+    </a>
   `;
 
   // ============================================================

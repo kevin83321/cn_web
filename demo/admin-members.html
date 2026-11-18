@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5d1">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261117-c5d1"></script>
+<script type="module" src="./js/admin-members.js?v=20261118-c7b5"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -32,7 +32,16 @@
 <p id="detailMessage" role="status"></p>
 <form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>安麗直銷商編號<input id="detailAmwayId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
 <div class="member-filter-grid"><label>會員類型<input id="detailRole" readonly></label><label>帳號狀態<input id="detailStatus" readonly></label></div><label>建立時間<input id="detailCreated" readonly></label>
-<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form></div>
+<div class="detail-actions"><button type="submit" id="detailSave" hidden>儲存變更</button></div></form>
+<section id="memberStatusPanel" class="relationship-panel" hidden aria-labelledby="memberStatusTitle">
+  <h3 id="memberStatusTitle">帳號狀態管理</h3>
+  <p class="hierarchy-help">停用會員將撤銷其現有登入 Session。不能變更自己的狀態，且系統會保護最後一位管理員。</p>
+  <label for="memberStatusSelect">變更為
+    <select id="memberStatusSelect"><option value="active">有效</option><option value="inactive">停用</option></select>
+  </label>
+  <div class="detail-actions"><button type="button" id="memberStatusSubmit">確認變更狀態</button></div>
+  <p id="memberStatusMessage" role="status" aria-live="polite"></p>
+</section></div>
 <div id="memberPanelRelations" role="tabpanel" aria-labelledby="memberTabRelations" hidden>
 <section id="relationshipPanel" class="relationship-panel" hidden aria-labelledby="relationshipTitle">
 <h3 id="relationshipTitle">組織與服務關係</h3>

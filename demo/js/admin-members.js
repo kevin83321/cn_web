@@ -17,6 +17,8 @@ import {
     loading: false,
     authorized: false,
     canEdit: false,
+    canEditStatus: false,
+    statusSaving: false,
     canEditHierarchy: false,
     canEditService: false,
     selectedServicer: null,
@@ -32,6 +34,7 @@ import {
 
   const READ_PERMISSION = 'admin.members.read';
   const UPDATE_PERMISSION = 'admin.members.update';
+  const STATUS_PERMISSION = 'admin.members.status.update';
   const HIERARCHY_PERMISSION = 'admin.members.hierarchy.update';
   const SERVICE_PERMISSION = 'admin.members.service.update';
 
@@ -55,8 +58,14 @@ import {
 
   const errorText = error => {
     const code = error?.message || 'UNKNOWN_ERROR';
-
-    return errors[code] || ('操作失敗：' + code);
+    const statusErrors = {
+      CANNOT_CHANGE_OWN_STATUS: '不能修改自己的帳號狀態',
+      EDIT_CONFLICT_OR_LAST_ADMIN: '資料已異動，或此操作會停用最後一位管理員，請重新載入後再試',
+      INVALID_VALUE: '不支援此帳號狀態',
+      INVALID_FIELDS: '帳號狀態更新欄位不正確',
+      MEMBER_NOT_FOUND: '找不到指定會員'
+    };
+    return statusErrors[code] || errors[code] || ('操作失敗：' + code);
   };
 
   function setMessage(text) {
@@ -66,6 +75,11 @@ import {
 
   function setDetailMessage(text) {
     const element = $('detailMessage');
+    if (element) element.textContent = text;
+  }
+
+  function setStatusMessage(text) {
+    const element = $('statusManageMessage');
     if (element) element.textContent = text;
   }
 
@@ -222,7 +236,7 @@ import {
 
   function fillDetail(member) {
     $('detailId').value = member.member_id || '';
-    $('detailAmwayId').value = member.amway_id ?? ''; 
+    $('detailAmwayId').value = member.amway_id ?? '';
     $('detailName').value = member.name || '';
     $('detailEmail').value = member.email || '';
     $('detailPhone').value = member.phone || '';
@@ -240,6 +254,92 @@ import {
     }
 
     $('detailSave').hidden = !state.canEdit;
+    renderStatusManagement(member);
+  }
+
+  function renderStatusManagement(member) {
+    const panel = $('statusManagePanel');
+    if (!panel) return;
+
+    const allowed = state.canEditStatus &&
+      (member.status === 'active' || member.status === 'inactive');
+
+    panel.hidden = !allowed;
+    if (!allowed) return;
+
+    const select = $('statusManageSelect');
+    const button = $('statusManageSubmit');
+    if (select) {
+      select.value = member.status;
+      select.disabled = state.statusSaving;
+    }
+    if (button) button.disabled = state.statusSaving;
+    setStatusMessage('');
+  }
+
+  async function submitStatusChange(event) {
+    event.preventDefault();
+    if (!state.authorized || !state.canEditStatus ||
+        !state.selected || state.statusSaving) return;
+
+    const target = state.selected;
+    const next = $('statusManageSelect')?.value;
+    if (!['active', 'inactive'].includes(next)) {
+      setStatusMessage('請選擇有效或停用');
+      return;
+    }
+    if (next === target.status) {
+      setStatusMessage('帳號狀態沒有變更');
+      return;
+    }
+
+    const description = next === 'inactive'
+      ? '停用後，該會員目前有效的登入 Session 將被撤銷。'
+      : '啟用後，該會員可以重新進行登入驗證。';
+
+    if (!window.confirm(
+      `確認變更會員帳號狀態？\n會員：${target.name || '未命名'} (${target.member_id})\n原狀態：${statusText(target.status)}\n新狀態：${statusText(next)}\n\n${description}`
+    )) return;
+
+    const requestId = state.detailRequestId;
+    const button = $('statusManageSubmit');
+    state.statusSaving = true;
+    if (button) button.disabled = true;
+    if ($('statusManageSelect')) $('statusManageSelect').disabled = true;
+    setStatusMessage('正在更新帳號狀態…');
+
+    try {
+      const data = await api(
+        '/api/admin/members/' + encodeURIComponent(target.member_id) + '/status',
+        { method: 'PATCH', body: { status: next } }
+      );
+
+      if (requestId !== state.detailRequestId ||
+          state.selected?.member_id !== target.member_id) return;
+
+      const refreshed = await api(
+        '/api/admin/members/' + encodeURIComponent(target.member_id)
+      );
+
+      if (requestId !== state.detailRequestId ||
+          state.selected?.member_id !== target.member_id) return;
+
+      if (!refreshed.member) throw new Error('INVALID_RESPONSE');
+      state.selected = refreshed.member;
+      fillDetail(state.selected);
+      setStatusMessage(data.changed === false
+        ? '帳號狀態沒有變更'
+        : '帳號狀態已更新');
+      await load();
+    } catch (error) {
+      if (requestId === state.detailRequestId) {
+        setStatusMessage(errorText(error));
+      }
+    } finally {
+      state.statusSaving = false;
+      if (button) button.disabled = false;
+      if ($('statusManageSelect')) $('statusManageSelect').disabled = false;
+    }
   }
 
   // C5-A: admin-only read-only relationship overview.
@@ -323,7 +423,7 @@ import {
       </dl>
       <h4>服務歷史</h4>
       <div class="relationship-table-wrap"><table><thead><tr><th>服務者</th><th>安麗編號</th><th>狀態</th><th>建立時間</th></tr></thead><tbody>${serviceRows || '<tr><td colspan="4">尚無服務歷史</td></tr>'}</tbody></table></div>
-      `;
+    `;
     $('auditContent').innerHTML = `<div class="relationship-table-wrap"><table><thead><tr><th>時間／動作</th><th>操作人</th><th>內容</th></tr></thead><tbody>${auditRows || '<tr><td colspan="3">尚無異動紀錄</td></tr>'}</tbody></table></div>`;
     $('auditMessage').textContent = '';
   }
@@ -349,7 +449,6 @@ import {
       $('auditMessage').textContent = errorText(error);
     }
   }
-
 
   function resetHierarchyEditor() {
     state.relationships = null;
@@ -783,6 +882,7 @@ import {
       'submit',
       saveDetail
     );
+    $('statusManageForm')?.addEventListener('submit', submitStatusChange);
 
     // 搜尋
     $('filters').addEventListener(
@@ -860,13 +960,15 @@ import {
       state.canEdit = permissions.includes(
         UPDATE_PERMISSION
       );
+      state.canEditStatus = permissions.includes(STATUS_PERMISSION);
       state.canEditHierarchy = permissions.includes(HIERARCHY_PERMISSION);
       state.canEditService = permissions.includes(SERVICE_PERMISSION);
 
       console.log(
         '[ADMIN MEMBERS] Permission verified',
         {
-          canEdit: state.canEdit
+          canEdit: state.canEdit,
+          canEditStatus: state.canEditStatus
         }
       );
 

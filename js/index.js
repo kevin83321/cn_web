@@ -63,33 +63,6 @@ import { CONFIG } from './config.js';
     }
   ];
 
-  const adminFeatures = [
-    {
-      id: 'adminMembers',
-      title: '全部會員',
-      detail: '管理會員資料',
-      icon: '▦',
-      permission: 'admin.members.read',
-      url: './admin-members.html'
-    },
-    {
-      id: 'adminAudit',
-      title: '操作紀錄',
-      detail: '查詢稽核紀錄',
-      icon: '≡',
-      permission: 'admin.audit.read',
-      url: './admin-audit-logs.html'
-    },
-    {
-      id: 'adminRoles',
-      title: '系統管理權限',
-      detail: '管理系統權限',
-      icon: '≡',
-      permission: 'admin.roles.catalog.read',
-      url: './admin-roles.html'
-    }
-  ];
-
   // ============================================================
   // 4. UI State
   // ============================================================
@@ -628,19 +601,6 @@ import { CONFIG } from './config.js';
 
     $('featureGrid').replaceChildren(
       ...availableFeatures.map(makeCard)
-    );
-
-    // Admin Features
-    const availableAdminFeatures =
-      adminFeatures.filter(item =>
-        can(item.permission)
-      );
-
-    $('adminSection').hidden =
-      availableAdminFeatures.length === 0;
-
-    $('adminGrid').replaceChildren(
-      ...availableAdminFeatures.map(makeCard)
     );
 
     navigate(

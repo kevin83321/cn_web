@@ -1,0 +1,30 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>管理中心 · CN</title>
+  <link rel="stylesheet" href="./css/admin.css">
+  <link rel="stylesheet" href="./css/app-shell.css">
+  <script defer src="./js/app-shell.js"></script>
+  <script type="module" src="./js/admin-home.js"></script>
+</head>
+<body data-page="admin">
+  <div class="app-shell">
+    <header class="app-header" id="appHeader"></header>
+    <main class="app-main">
+      <div class="app-intro">
+        <h1>管理中心</h1>
+        <p>選擇需要使用的管理功能</p>
+      </div>
+      <section class="cn-panel">
+        <h2>管理功能</h2>
+        <p id="adminMessage" role="status">正在確認權限…</p>
+        <div id="adminFeatures" class="admin-items" hidden></div>
+      </section>
+    </main>
+    <nav id="appFooter" class="bottom-nav" aria-label="主要導覽"></nav>
+  </div>
+</body>
+</html>

@@ -51,7 +51,8 @@ window.CNAuthGuardReady = (() => {
     customers: ['服務客戶', 'CN MEMBER PORTAL'],
     members: ['會員管理', 'CN MEMBER PORTAL'],
     audit: ['操作紀錄', 'CN MEMBER PORTAL'],
-    register: ['加入 CN', 'CN MEMBER PORTAL']
+    register: ['加入 CN', 'CN MEMBER PORTAL'],
+    admin: ['管理中心', 'CN MEMBER PORTAL'],
   };
 
   const title = pages[page] || pages.home;
@@ -156,9 +157,9 @@ window.CNAuthGuardReady = (() => {
   `;
 
   const ADMIN_DESTINATIONS = [
-    ['admin.members.read', './admin-members.html'],
-    ['admin.audit.read', './admin-audit-logs.html'],
-    ['admin.roles.catalog.read', './admin-roles.html']
+    ['admin.members.read', './admin.html'],
+    ['admin.audit.read', './admin.html'],
+    ['admin.roles.catalog.read', './admin.html']
   ];
 
   window.CNAppShell = window.CNAppShell || {};

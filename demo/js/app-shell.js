@@ -218,9 +218,10 @@ window.CNAuthGuardReady = (() => {
   // Home Page Navigation
   // ============================================================
 
-  // 首頁交給 index.js 處理實際畫面切換
   if (page === 'home') {
-    nav.querySelectorAll('[data-nav]').forEach(link => {
+    nav.querySelectorAll(
+      '[data-nav="home"], [data-nav="account"]'
+    ).forEach(link => {
       link.addEventListener('click', event => {
         event.preventDefault();
 

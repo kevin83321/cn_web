@@ -1009,19 +1009,11 @@ import { CONFIG } from './config.js';
   // ============================================================
 
   function navigate(tab) {
-    if (!state.member) {
-      return;
-    }
+    if (!state.member) return;
 
     const isAccount = tab === 'account';
-
-    const view = isAccount
-      ? 'accountView'
-      : 'dashboardView';
-
-    const hash = isAccount
-      ? '#account'
-      : '';
+    const view = isAccount ? 'accountView' : 'dashboardView';
+    const hash = isAccount ? '#account' : '';
 
     show(view);
 
@@ -1030,11 +1022,14 @@ import { CONFIG } from './config.js';
       location.search +
       hash;
 
-    history.replaceState(
-      null,
-      '',
-      targetUrl
-    );
+    const currentUrl =
+      location.pathname +
+      location.search +
+      location.hash;
+
+    if (currentUrl !== targetUrl) {
+      history.pushState(null, '', targetUrl);
+    }
   }
 
   // ============================================================
@@ -1111,6 +1106,16 @@ import { CONFIG } from './config.js';
       );
     }
   );
+  
+  window.addEventListener('popstate', () => {
+    if (!state.member) return;
+
+    navigate(
+      location.hash === '#account'
+        ? 'account'
+        : 'home'
+    );
+  });
 
   document
     .querySelectorAll('[data-tab]')

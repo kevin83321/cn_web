@@ -94,7 +94,7 @@ window.CNAuthGuardReady = (() => {
         <a
           class="header-back"
           href="./index.html"
-          aria-label="返回會員中心"
+          aria-label="返回上一頁"
         >
           ‹
         </a>
@@ -107,7 +107,30 @@ window.CNAuthGuardReady = (() => {
       `;
     }
   }
+  const backButton = header?.querySelector('.header-back');
 
+  if (backButton) {
+    backButton.addEventListener('click', event => {
+      const referrer = document.referrer;
+
+      if (!referrer) return;
+
+      try {
+        const previous = new URL(referrer);
+
+        // 僅允許返回同一個網站的頁面
+        if (
+          previous.origin === location.origin &&
+          previous.pathname !== location.pathname
+        ) {
+          event.preventDefault();
+          history.back();
+        }
+      } catch (error) {
+        console.warn('[APP SHELL] Invalid referrer:', error);
+      }
+    });
+  }
   // ============================================================
   // Footer
   // ============================================================
@@ -292,11 +315,11 @@ window.CNAuthGuardReady = (() => {
       link.addEventListener('click', event => {
         event.preventDefault();
 
-        const tab = link.dataset.nav;
-
         window.dispatchEvent(
           new CustomEvent('cn:navigate', {
-            detail: { tab }
+            detail: {
+              tab: link.dataset.nav
+            }
           })
         );
       });

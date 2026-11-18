@@ -7,7 +7,7 @@
 <script defer src="./js/app-shell.js"></script><script type="module" src="./js/admin-roles.js?v=20261111-96"></script><link rel="icon" href="./asset/favicon.ico">
 </head>
 <body data-page="admin-roles"><div class="app-shell"><header class="app-header" id="appHeader"></header><main class="app-main">
-<div class="app-intro"><span class="cn-eyebrow">ADMINISTRATION</span><h1>系統角色與權限</h1><p>管理角色、檢視權限及設定系統存取範圍</p></div>
+<div class="app-intro"><h1>系統角色與權限</h1><p>管理角色、檢視權限及設定系統存取範圍</p></div>
 <div class="role-tabs" role="tablist" aria-label="角色管理功能"><button id="tabRoles" type="button" role="tab" aria-controls="rolesPanel" aria-selected="true">角色與權限</button><button id="tabCreate" type="button" role="tab" aria-controls="createPanel" aria-selected="false" hidden>新增角色</button></div>
 <div id="rolesPanel" role="tabpanel" aria-labelledby="tabRoles">
 <section class="cn-panel" id="roleCatalog"><div class="role-section-heading"><div><h2>角色清單</h2><p class="role-muted">選擇角色後查看權限設定</p></div><button type="button" id="reloadRoles" class="role-secondary">重新整理</button></div><p id="notice" role="status" aria-live="polite">正在確認權限…</p><div id="roles" class="role-list"></div></section>

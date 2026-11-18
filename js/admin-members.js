@@ -29,7 +29,9 @@ import {
     parentSearchRequestId: 0,
     selected: null,
     detailRequestId: 0,
-    listRequestId: 0
+    listRequestId: 0,
+    canEditStatus: false,
+    statusSaving: false,
   };
 
   const READ_PERMISSION = 'admin.members.read';
@@ -242,7 +244,6 @@ import {
     $('detailPhone').value = member.phone || '';
 
     $('detailRole').value = roleText(member.role);
-    $('detailStatus').value = statusText(member.status);
     $('detailCreated').value = member.created_at || '';
 
     for (const key of [
@@ -253,93 +254,24 @@ import {
       $(key).readOnly = !state.canEdit;
     }
 
-    $('detailSave').hidden = !state.canEdit;
-    renderStatusManagement(member);
-  }
+    const supported = ['active', 'inactive'].includes(
+      member.status
+    );
 
-  function renderStatusManagement(member) {
-    const panel = $('statusManagePanel');
-    if (!panel) return;
+    document.querySelectorAll(
+      'input[name="detailStatus"]'
+    ).forEach(radio => {
+      radio.checked = radio.value === member.status;
+      radio.disabled = !state.canEditStatus || !supported;
+    });
 
-    const allowed = state.canEditStatus &&
-      (member.status === 'active' || member.status === 'inactive');
+    $('detailStatusNote').hidden =
+      !state.canEditStatus || !supported;
 
-    panel.hidden = !allowed;
-    if (!allowed) return;
-
-    const select = $('statusManageSelect');
-    const button = $('statusManageSubmit');
-    if (select) {
-      select.value = member.status;
-      select.disabled = state.statusSaving;
-    }
-    if (button) button.disabled = state.statusSaving;
-    setStatusMessage('');
-  }
-
-  async function submitStatusChange(event) {
-    event.preventDefault();
-    if (!state.authorized || !state.canEditStatus ||
-        !state.selected || state.statusSaving) return;
-
-    const target = state.selected;
-    const next = $('statusManageSelect')?.value;
-    if (!['active', 'inactive'].includes(next)) {
-      setStatusMessage('請選擇有效或停用');
-      return;
-    }
-    if (next === target.status) {
-      setStatusMessage('帳號狀態沒有變更');
-      return;
-    }
-
-    const description = next === 'inactive'
-      ? '停用後，該會員目前有效的登入 Session 將被撤銷。'
-      : '啟用後，該會員可以重新進行登入驗證。';
-
-    if (!window.confirm(
-      `確認變更會員帳號狀態？\n會員：${target.name || '未命名'} (${target.member_id})\n原狀態：${statusText(target.status)}\n新狀態：${statusText(next)}\n\n${description}`
-    )) return;
-
-    const requestId = state.detailRequestId;
-    const button = $('statusManageSubmit');
-    state.statusSaving = true;
-    if (button) button.disabled = true;
-    if ($('statusManageSelect')) $('statusManageSelect').disabled = true;
-    setStatusMessage('正在更新帳號狀態…');
-
-    try {
-      const data = await api(
-        '/api/admin/members/' + encodeURIComponent(target.member_id) + '/status',
-        { method: 'PATCH', body: { status: next } }
-      );
-
-      if (requestId !== state.detailRequestId ||
-          state.selected?.member_id !== target.member_id) return;
-
-      const refreshed = await api(
-        '/api/admin/members/' + encodeURIComponent(target.member_id)
-      );
-
-      if (requestId !== state.detailRequestId ||
-          state.selected?.member_id !== target.member_id) return;
-
-      if (!refreshed.member) throw new Error('INVALID_RESPONSE');
-      state.selected = refreshed.member;
-      fillDetail(state.selected);
-      setStatusMessage(data.changed === false
-        ? '帳號狀態沒有變更'
-        : '帳號狀態已更新');
-      await load();
-    } catch (error) {
-      if (requestId === state.detailRequestId) {
-        setStatusMessage(errorText(error));
-      }
-    } finally {
-      state.statusSaving = false;
-      if (button) button.disabled = false;
-      if ($('statusManageSelect')) $('statusManageSelect').disabled = false;
-    }
+    $('detailSave').hidden = !(
+      state.canEdit ||
+      (state.canEditStatus && supported)
+    );
   }
 
   // C5-A: admin-only read-only relationship overview.
@@ -716,13 +648,15 @@ import {
 
     if (
       !state.authorized ||
-      !state.canEdit ||
-      !state.selected
+      !state.selected ||
+      state.statusSaving
     ) {
       return;
     }
 
-    const memberId = state.selected.member_id;
+    const target = state.selected;
+    const memberId = target.member_id;
+    const requestId = state.detailRequestId;
 
     const body = {
       name: $('detailName').value.trim(),
@@ -730,56 +664,174 @@ import {
       phone: $('detailPhone').value.trim() || null
     };
 
-    if (!body.name) {
+    const changedBasic = state.canEdit && (
+      body.name !== (target.name || '') ||
+      body.email !== (target.email || null) ||
+      body.phone !== (target.phone || null)
+    );
+
+    const nextStatus = document.querySelector(
+      'input[name="detailStatus"]:checked'
+    )?.value;
+
+    const changedStatus =
+      state.canEditStatus &&
+      ['active', 'inactive'].includes(nextStatus) &&
+      nextStatus !== target.status;
+
+    if (!changedBasic && !changedStatus) {
+      setDetailMessage('資料沒有變更。');
+      return;
+    }
+
+    if (changedBasic && !body.name) {
       setDetailMessage('請輸入會員姓名');
       $('detailName').focus();
       return;
     }
 
+    // 帳號狀態變更需要再次確認
+    if (changedStatus) {
+      const action =
+        nextStatus === 'inactive' ? '停用' : '啟用';
+
+      const warning = nextStatus === 'inactive'
+        ? '\n停用後將撤銷此會員目前的登入 Session。'
+        : '';
+
+      const confirmed = window.confirm(
+        `確定${action}會員 ${target.name || memberId} (${memberId})？\n` +
+        `目前：${statusText(target.status)}\n` +
+        `變更為：${statusText(nextStatus)}` +
+        warning
+      );
+
+      if (!confirmed) return;
+    }
+
     const button = $('detailSave');
 
+    state.statusSaving = true;
     button.disabled = true;
+
+    document.querySelectorAll(
+      'input[name="detailStatus"]'
+    ).forEach(radio => {
+      radio.disabled = true;
+    });
+
+    let basicSaved = false;
+    let statusSaved = false;
+
     setDetailMessage('正在儲存會員資料…');
 
     try {
-      const data = await api(
-        '/api/admin/members/' +
-        encodeURIComponent(memberId),
-        {
-          method: 'PATCH',
-          body
-        }
-      );
+      // 基本資料與狀態使用不同 API
+      if (changedBasic) {
+        await api(
+          '/api/admin/members/' +
+            encodeURIComponent(memberId),
+          {
+            method: 'PATCH',
+            body
+          }
+        );
 
-      if (data.member) {
-        state.selected = data.member;
-      } else {
-        state.selected = {
-          ...state.selected,
-          ...body
-        };
+        basicSaved = true;
       }
 
-      fillDetail(state.selected);
+      if (changedStatus) {
+        await api(
+          '/api/admin/members/' +
+            encodeURIComponent(memberId) +
+            '/status',
+          {
+            method: 'PATCH',
+            body: {
+              status: nextStatus
+            }
+          }
+        );
 
-      setDetailMessage(
-        data.changed === false
-          ? '資料沒有變更。'
-          : '會員資料已儲存。'
+        statusSaved = true;
+      }
+
+      // 重新取得最新會員資料
+      const refreshed = await api(
+        '/api/admin/members/' +
+          encodeURIComponent(memberId)
       );
+
+      if (
+        requestId !== state.detailRequestId ||
+        state.selected?.member_id !== memberId
+      ) {
+        return;
+      }
+
+      if (!refreshed.member) {
+        throw new Error('INVALID_RESPONSE');
+      }
+
+      state.selected = refreshed.member;
+
+      fillDetail(state.selected);
+      setDetailMessage('會員資料已儲存。');
 
       await load();
 
     } catch (error) {
+      if (
+        requestId !== state.detailRequestId ||
+        state.selected?.member_id !== memberId
+      ) {
+        return;
+      }
+
+      const code = error?.message;
+
+      const detail =
+        code === 'EDIT_CONFLICT_OR_LAST_ADMIN'
+          ? '異動衝突或此會員是最後一位管理員，請重新查詢後再試。'
+          : code === 'CANNOT_CHANGE_OWN_STATUS'
+          ? '不能變更自己的帳號狀態。'
+          : errorText(error);
+
+      const prefix =
+        basicSaved || statusSaved
+          ? '部分變更已儲存；'
+          : '';
+
+      setDetailMessage(prefix + detail);
+
       console.error(
         '[ADMIN MEMBERS] Save failed:',
         error
       );
 
-      setDetailMessage(errorText(error));
+      if (basicSaved || statusSaved) {
+        await load();
+      }
 
     } finally {
-      button.disabled = false;
+      state.statusSaving = false;
+
+      if (
+        requestId === state.detailRequestId &&
+        state.selected?.member_id === memberId
+      ) {
+        button.disabled = false;
+
+        document.querySelectorAll(
+          'input[name="detailStatus"]'
+        ).forEach(radio => {
+          radio.disabled =
+            !state.canEditStatus ||
+            !['active', 'inactive'].includes(
+              state.selected.status
+            );
+        });
+      }
     }
   }
 
@@ -882,8 +934,6 @@ import {
       'submit',
       saveDetail
     );
-    $('statusManageForm')?.addEventListener('submit', submitStatusChange);
-
     // 搜尋
     $('filters').addEventListener(
       'submit',
@@ -956,10 +1006,7 @@ import {
       }
 
       state.authorized = true;
-
-      state.canEdit = permissions.includes(
-        UPDATE_PERMISSION
-      );
+      state.canEdit = permissions.includes(UPDATE_PERMISSION);
       state.canEditStatus = permissions.includes(STATUS_PERMISSION);
       state.canEditHierarchy = permissions.includes(HIERARCHY_PERMISSION);
       state.canEditService = permissions.includes(SERVICE_PERMISSION);

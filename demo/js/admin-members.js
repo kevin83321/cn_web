@@ -350,6 +350,7 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
 
       state.roleData = data;
       fillRoleSelect();
+      refreshAuditDisplay();
 
     } catch (error) {
       if (requestId !== state.detailRequestId) return;
@@ -412,14 +413,19 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
   const auditActionNames = {
     admin_member_hierarchy_update: '修改組織上線',
     admin_member_service_update: '指派／更換服務者',
-    admin_member_service_remove: '解除服務者'
+    admin_member_service_remove: '解除服務者',
+    admin_system_role_replace: '變更系統角色',
+    admin_system_role_update: '系統角色異動（舊版）'
   };
   const auditFieldNames = {
     parent_member_id: '直接上線',
     service_distributor_member_id: '服務者',
     service_id: '服務紀錄 ID',
     sync_service: '同步更新服務者',
-    reason: '異動原因'
+    reason: '異動原因',
+    system_roles: '系統角色',
+    system_role: '系統角色',
+    enabled: '啟用狀態'
   };
   function auditObject(raw) {
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw;
@@ -440,13 +446,41 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
   }
+  function auditRoleLabel(code) {
+    if (!code) return '未指派';
+
+    const definition = state.roleData?.definitions
+      ?.find(item => item.system_role === code);
+
+    return definition?.display_name || code;
+  }
+
+  function auditDisplayValue(key, value) {
+    if (key === 'system_roles') {
+      if (!Array.isArray(value) || value.length === 0) {
+        return '未指派';
+      }
+
+      return value.map(auditRoleLabel).join('、');
+    }
+
+    if (key === 'system_role') {
+      return auditRoleLabel(value);
+    }
+
+    if (key === 'enabled') {
+      return Number(value) === 1 ? '啟用' : '停用';
+    }
+
+    return auditValue(value);
+  }
   function auditRowsHtml(log) {
     const before = auditObject(log.before_value);
     const after = auditObject(log.after_value);
     const keys = [...new Set([...Object.keys(before || {}), ...Object.keys(after || {})])]
       .filter(key => key !== 'reason' && key !== 'sync_service');
     const changes = keys.filter(key => JSON.stringify(before?.[key] ?? null) !== JSON.stringify(after?.[key] ?? null));
-    const lines = changes.map(key => `<div class="audit-change-row"><strong>${esc(auditFieldNames[key] || key)}</strong><span>${esc(auditValue(before?.[key]))}</span><span class="audit-change-arrow">→</span><span>${esc(auditValue(after?.[key]))}</span></div>`).join('');
+    const lines = changes.map(key => `<div class="audit-change-row"><strong>${esc(auditFieldNames[key] || key)}</strong><span>${esc(auditDisplayValue(key, before?.[key]))}</span><span class="audit-change-arrow">→</span><span>${esc(auditDisplayValue(key, after?.[key]))}</span></div>`).join('');
     const reason = after?.reason ?? before?.reason;
     const sync = after?.sync_service;
     const rawBefore = typeof log.before_value === 'string' ? log.before_value : JSON.stringify(log.before_value ?? null);
@@ -457,6 +491,45 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       ${sync !== undefined ? `<p class="audit-muted">同步服務者：${esc(auditValue(sync))}</p>` : ''}
       <details class="audit-raw"><summary>檢視原始紀錄</summary><strong>異動前</strong><pre>${esc(rawBefore)}</pre><strong>異動後</strong><pre>${esc(rawAfter)}</pre></details>
     </div>`;
+  }
+
+  function refreshAuditDisplay() {
+    const logs =
+      state.relationships?.relationship_audit_logs;
+
+    if (!Array.isArray(logs)) return;
+
+    const rows = logs.map(item => `
+      <tr>
+        <td class="audit-when-action">
+          <span class="audit-when">
+            ${esc(auditTime(item.created_at))}
+          </span>
+          <span class="audit-action">
+            ${esc(auditActionNames[item.action] || item.action || '未知操作')}
+          </span>
+        </td>
+        <td>${esc(item.actor_member_id || '—')}</td>
+        <td>${auditRowsHtml(item)}</td>
+      </tr>
+    `).join('');
+
+    $('auditContent').innerHTML = `
+      <div class="relationship-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>時間／動作</th>
+              <th>操作人</th>
+              <th>內容</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="3">尚無異動紀錄</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
   }
 
   function renderRelationships(data) {

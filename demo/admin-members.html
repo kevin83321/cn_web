@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="./css/admin-members-ui.css?v=20261117-c5d1">
 <script defer src="./js/app-shell.js"></script>
 <script type="module" src="./js/admin-common.js"></script>
-<script type="module" src="./js/admin-members.js?v=20261118-c7b6"></script>
+<script type="module" src="./js/admin-members.js?v=20261118-c7b7"></script>
 </head><body data-page="members">
 <div class="app-shell"><header class="app-header" id="appHeader"></header>
 <main class="app-main admin-members-page">
@@ -32,6 +32,12 @@
 <p id="detailMessage" role="status"></p>
 <form id="detailForm"><label>會員 ID<input id="detailId" readonly></label><label>安麗直銷商編號<input id="detailAmwayId" readonly></label><label>會員名稱<input id="detailName" maxlength="100" required></label><label>Email<input id="detailEmail" type="email" maxlength="254"></label><label>電話<input id="detailPhone" type="tel" maxlength="30"></label>
 <div class="member-filter-grid"><label>會員類型<input id="detailRole" readonly></label></div>
+<div id="detailSystemRoleArea" hidden>
+<label for="detailSystemRole">系統角色
+<select id="detailSystemRole" disabled><option value="">正在載入…</option></select>
+</label>
+<p id="detailSystemRoleNote" class="hierarchy-help" role="status"></p>
+</div>
 <fieldset id="detailStatusField" style="border:0;padding:0;margin:12px 0;min-width:0">
   <legend style="font-weight:600;margin-bottom:8px">帳號狀態</legend>
   <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">

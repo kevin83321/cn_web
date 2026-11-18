@@ -32,6 +32,10 @@ import {
     listRequestId: 0,
     canEditStatus: false,
     statusSaving: false,
+    canReadRoles: false,
+    canAssignRoles: false,
+    roleData: null,
+    roleLoading: false,
   };
 
   const READ_PERMISSION = 'admin.members.read';
@@ -39,6 +43,8 @@ import {
   const STATUS_PERMISSION = 'admin.members.status.update';
   const HIERARCHY_PERMISSION = 'admin.members.hierarchy.update';
   const SERVICE_PERMISSION = 'admin.members.service.update';
+  const ROLE_READ_PERMISSION = 'admin.roles.read';
+  const ROLE_ASSIGN_PERMISSION = 'admin.roles.assign';
 
   const roleNames = {
     distributor: '直銷商',
@@ -233,6 +239,131 @@ import {
         setSearchDisabled(false);
         updatePagination();
       }
+    }
+  }
+
+  function roleLabel(code) {
+    return state.roleData?.definitions
+      ?.find(d => d.system_role === code)
+      ?.display_name || code || '未指派';
+  }
+
+  function fillRoleSelect() {
+    const area = $('detailSystemRoleArea');
+    const select = $('detailSystemRole');
+    const note = $('detailSystemRoleNote');
+
+    if (!area || !select || !note) return;
+
+    area.hidden = !state.canReadRoles;
+
+    if (!state.canReadRoles) return;
+
+    const data = state.roleData;
+
+    select.replaceChildren();
+
+    if (!data) {
+      select.add(new Option('正在載入…', ''));
+      select.disabled = true;
+      return;
+    }
+
+    const active = (data.roles || [])
+      .filter(r => Number(r.enabled) === 1)
+      .map(r => r.system_role);
+
+    const current = active.length === 1
+      ? active[0]
+      : '';
+
+    select.add(new Option(
+      active.length > 1
+        ? '目前有多個角色，請重新指定'
+        : '未指派角色',
+      ''
+    ));
+
+    for (const definition of data.definitions || []) {
+      const option = new Option(
+        definition.display_name || definition.system_role,
+        definition.system_role
+      );
+
+      option.disabled =
+        !definition.assignable &&
+        definition.system_role !== current;
+
+      select.add(option);
+    }
+
+    select.value = current;
+
+    const editable =
+      state.canAssignRoles &&
+      data.member_status === 'active' &&
+      active.every(code =>
+        data.definitions?.find(
+          d => d.system_role === code
+        )?.assignable
+      );
+
+    select.disabled = !editable;
+
+    if (active.length > 1) {
+      note.textContent =
+        '目前有多個啟用角色，請重新指定。儲存後只保留選取的角色。';
+    } else if (!editable) {
+      note.textContent = '此會員的系統角色僅供檢視。';
+    } else {
+      note.textContent =
+        '變更系統角色後，會員需要重新登入。';
+    }
+
+    $('detailSave').hidden = !(
+      state.canEdit ||
+      state.canEditStatus ||
+      editable
+    );
+  }
+
+  async function loadSystemRoles(memberId, requestId) {
+    if (!state.canReadRoles) return;
+
+    state.roleData = null;
+    fillRoleSelect();
+
+    try {
+      const data = await api(
+        '/api/admin/members/' +
+        encodeURIComponent(memberId) +
+        '/system-roles'
+      );
+
+      if (
+        requestId !== state.detailRequestId ||
+        state.selected?.member_id !== memberId
+      ) {
+        return;
+      }
+
+      if (
+        !Array.isArray(data.definitions) ||
+        !Array.isArray(data.roles)
+      ) {
+        throw new Error('INVALID_RESPONSE');
+      }
+
+      state.roleData = data;
+      fillRoleSelect();
+
+    } catch (error) {
+      if (requestId !== state.detailRequestId) return;
+
+      $('detailSystemRoleNote').textContent =
+        errorText(error);
+
+      $('detailSystemRole').disabled = true;
     }
   }
 
@@ -559,6 +690,8 @@ import {
 
   async function openDetail(memberId) {
     if (!state.authorized) return;
+    state.roleData = null;
+    fillRoleSelect();
 
     const requestId = ++state.detailRequestId;
     const panel = $('memberDetail');
@@ -594,6 +727,9 @@ import {
       state.selected = data.member;
 
       fillDetail(state.selected);
+      if (state.canReadRoles) {
+        await loadSystemRoles(memberId, requestId);
+      }
       $('detailForm').hidden = false;
 
       setDetailMessage(
@@ -605,6 +741,7 @@ import {
       updateSelection();
       // Independent read: basic member detail remains usable if C4 fails.
       void loadRelationships(memberId, requestId);
+      void loadSystemRoles(memberId, requestId);
 
       // Modal stays in place; only its content scrolls.
 
@@ -625,6 +762,8 @@ import {
   }
 
   function closeDetail() {
+    state.roleData = null;
+    fillRoleSelect();
     state.detailRequestId++;
     resetHierarchyEditor();
     state.selected = null;
@@ -679,7 +818,24 @@ import {
       ['active', 'inactive'].includes(nextStatus) &&
       nextStatus !== target.status;
 
-    if (!changedBasic && !changedStatus) {
+    const roleSelect = $('detailSystemRole');
+    const activeRoles = (state.roleData?.roles || [])
+      .filter(r => Number(r.enabled) === 1)
+      .map(r => r.system_role);
+
+    const nextRole = roleSelect?.value || '';
+
+    const changedRole =
+      state.canReadRoles &&
+      state.canAssignRoles &&
+      !roleSelect?.disabled &&
+      !!nextRole &&
+      (
+        activeRoles.length !== 1 ||
+        activeRoles[0] !== nextRole
+      );
+
+    if (!changedBasic && !changedStatus && !changedRole) {
       setDetailMessage('資料沒有變更。');
       return;
     }
@@ -688,6 +844,20 @@ import {
       setDetailMessage('請輸入會員姓名');
       $('detailName').focus();
       return;
+    }
+
+    if (changedRole) {
+      const previous =
+        activeRoles.map(roleLabel).join('、') || '未指派';
+
+      const confirmed = window.confirm(
+        `確定變更 ${target.name || memberId} (${memberId}) 的系統角色？\n` +
+        `目前：${previous}\n` +
+        `新角色：${roleLabel(nextRole)}\n\n` +
+        '更新後將撤銷此會員現有的登入 Session，需重新登入。'
+      );
+
+      if (!confirmed) return;
     }
 
     // 帳號狀態變更需要再次確認
@@ -722,6 +892,11 @@ import {
 
     let basicSaved = false;
     let statusSaved = false;
+    let roleSaved = false;
+
+    if (roleSelect) {
+      roleSelect.disabled = true;
+    }
 
     setDetailMessage('正在儲存會員資料…');
 
@@ -741,6 +916,20 @@ import {
       }
 
       if (changedStatus) {
+        await api(
+            '/api/admin/members/' +
+            encodeURIComponent(memberId) +
+            '/system-role',
+            {
+              method: 'PUT',
+              body: {
+                system_role: nextRole
+              }
+            }
+          );
+
+          roleSaved = true;
+        }
         await api(
           '/api/admin/members/' +
             encodeURIComponent(memberId) +
@@ -776,6 +965,9 @@ import {
       state.selected = refreshed.member;
 
       fillDetail(state.selected);
+      if (state.canReadRoles) {
+        await loadSystemRoles(memberId, requestId);
+      }
       setDetailMessage('會員資料已儲存。');
 
       await load();
@@ -798,7 +990,7 @@ import {
           : errorText(error);
 
       const prefix =
-        basicSaved || statusSaved
+        basicSaved || statusSaved || roleSaved
           ? '部分變更已儲存；'
           : '';
 
@@ -809,7 +1001,7 @@ import {
         error
       );
 
-      if (basicSaved || statusSaved) {
+      if (basicSaved || statusSaved || roleSaved) {
         await load();
       }
 
@@ -832,6 +1024,7 @@ import {
             );
         });
       }
+      fillRoleSelect();
     }
   }
 
@@ -1010,6 +1203,8 @@ import {
       state.canEditStatus = permissions.includes(STATUS_PERMISSION);
       state.canEditHierarchy = permissions.includes(HIERARCHY_PERMISSION);
       state.canEditService = permissions.includes(SERVICE_PERMISSION);
+      state.canReadRoles = permissions.includes(ROLE_READ_PERMISSION);
+      state.canAssignRoles = permissions.includes(ROLE_ASSIGN_PERMISSION);
 
       console.log(
         '[ADMIN MEMBERS] Permission verified',

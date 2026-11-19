@@ -32,6 +32,7 @@ import { $, api, getToken, errors } from './admin-common.js';
   };
 
   function selectTab(tab) {
+    if (state.saving) return;
     const create = tab === 'create';
     $('rolesPanel').hidden = create;
     $('createPanel').hidden = !create;
@@ -40,6 +41,7 @@ import { $, api, getToken, errors } from './admin-common.js';
   }
 
   function showRoleList() {
+    if (state.saving) return;
     state.detailRequest++;
     state.selected = null;
     $('editSection').hidden = true;
@@ -86,7 +88,10 @@ import { $, api, getToken, errors } from './admin-common.js';
     const role = detail.role;
     const existing = new Set((detail.permissions || []).map(p => typeof p === 'string' ? p : p.permission_code));
     const assignable = new Set(state.catalog?.assignable_permission_codes || []);
-    const canEdit = has('admin.roles.permissions.manage') && !role.protected && [...existing].every(code => assignable.has(code));
+    const catalogCodes = new Set((state.catalog?.permissions || []).map(p => p.permission_code));
+    // 未完整載入的既有權限不可因前端表單漏列而被 PUT 覆蓋。
+    const canEdit = has('admin.roles.permissions.manage') && !role.protected &&
+      [...existing].every(code => assignable.has(code) && catalogCodes.has(code));
     const groups = new Map();
     for (const p of state.catalog?.permissions || []) {
       const code = p.permission_code;
@@ -126,6 +131,7 @@ import { $, api, getToken, errors } from './admin-common.js';
   }
 
   async function openRole(code) {
+    if (state.saving) return;
     const requestId = ++state.detailRequest;
     state.selected = null;
     selectTab('roles');
@@ -174,11 +180,12 @@ import { $, api, getToken, errors } from './admin-common.js';
 
   async function savePermissions(event) {
     event.preventDefault();
-    if (state.saving || !state.selected || state.selected.protected || !has('admin.roles.permissions.manage')) return;
+    if (state.saving || !state.selected || state.selected.protected || !has('admin.roles.permissions.manage') || $('saveButton').hidden) return;
     const role = state.selected;
     const permissions = Array.from($('permissionOptions').querySelectorAll('input[type="checkbox"]:checked')).map(el => el.value);
     if (!confirm(`確定更新「${role.display_name}」的權限？相關會員可能需要重新登入。`)) return;
     state.saving = true;
+    let saved = false;
     $('saveButton').disabled = true;
     $('editMessage').textContent = '正在儲存…';
     try {
@@ -186,14 +193,19 @@ import { $, api, getToken, errors } from './admin-common.js';
         method: 'PUT', body: { permissions }
       });
       $('editMessage').textContent = result.changed === false ? '權限沒有變更。' : '權限已更新。';
+      saved = true;
       await loadRoles();
-      await openRole(role.system_role);
+      // 儲存鎖定期間不切換畫面；解鎖後重新讀取最新資料。
       $('editMessage').textContent = result.changed === false ? '權限沒有變更。' : '權限已更新。';
     } catch (e) {
       $('editMessage').textContent = '儲存失敗：' + errText(e);
     } finally {
       state.saving = false;
       $('saveButton').disabled = false;
+    }
+    if (saved) {
+      await openRole(role.system_role);
+      $('editMessage').textContent = '權限已儲存，已重新載入最新設定。';
     }
   }
 

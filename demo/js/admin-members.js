@@ -381,6 +381,8 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         error
       );
 
+      // 失敗時不得保留前一次會員的角色資料。
+      state.roleData = null;
       if (select) {
         select.disabled = true;
       }
@@ -664,7 +666,7 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       renderRelationships(data);
       $('relationshipMessage').textContent = '';
     } catch (error) {
-      if (requestId !== state.detailRequestId) return;
+      if (requestId !== state.detailRequestId || state.selected?.member_id !== memberId) return;
       $('relationshipMessage').textContent = errorText(error);
       $('auditMessage').textContent = errorText(error);
     }
@@ -846,7 +848,8 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
   }
 
   async function openDetail(memberId) {
-    if (!state.authorized) return;
+    // 儲存進行中不可切換會員，避免部分成功後畫面失去同步。
+    if (!state.authorized || state.statusSaving) return;
     state.roleData = null;
     fillRoleSelect();
 
@@ -916,6 +919,8 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
   }
 
   function closeDetail() {
+    // 等待多個寫入請求與後續資料同步完成。
+    if (state.statusSaving) return;
     state.roleData = null;
     fillRoleSelect();
     state.detailRequestId++;

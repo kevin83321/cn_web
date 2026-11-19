@@ -10,26 +10,31 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     total: 0,
     loading: false,
     authorized: false,
+
     canEdit: false,
     canEditStatus: false,
     statusSaving: false,
+
     canEditHierarchy: false,
     canEditService: false,
+
     selectedServicer: null,
     serviceMode: 'assign',
     serviceSearchRequestId: 0,
+
     relationships: null,
+
     selectedParent: null,
     parentSearchRequestId: 0,
+
     selected: null,
     detailRequestId: 0,
     listRequestId: 0,
-    canEditStatus: false,
-    statusSaving: false,
+
     canReadRoles: false,
     canAssignRoles: false,
     roleData: null,
-    roleLoading: false,
+    roleLoading: false
   };
 
   const READ_PERMISSION = 'admin.members.read';
@@ -324,8 +329,11 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
   async function loadSystemRoles(memberId, requestId) {
     if (!state.canReadRoles) return;
 
-    state.roleData = null;
-    fillRoleSelect();
+    const select = $('detailSystemRole');
+
+    if (select) {
+      select.disabled = true;
+    }
 
     try {
       const data = await api(
@@ -334,6 +342,7 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         '/system-roles'
       );
 
+      // 避免切換會員後，舊請求覆蓋新會員資料
       if (
         requestId !== state.detailRequestId ||
         state.selected?.member_id !== memberId
@@ -348,18 +357,99 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         throw new Error('INVALID_RESPONSE');
       }
 
+      // 更新系統角色資料
       state.roleData = data;
+
+      // 重新產生下拉選單並選取目前角色
       fillRoleSelect();
-      refreshAuditDisplay();
+
+      // 若有異動紀錄，重新顯示角色名稱
+      if (typeof refreshAuditDisplay === 'function') {
+        refreshAuditDisplay();
+      }
 
     } catch (error) {
-      if (requestId !== state.detailRequestId) return;
+      if (
+        requestId !== state.detailRequestId ||
+        state.selected?.member_id !== memberId
+      ) {
+        return;
+      }
+
+      console.error(
+        '[ADMIN MEMBERS] Load system roles failed:',
+        error
+      );
+
+      if (select) {
+        select.disabled = true;
+      }
 
       $('detailSystemRoleNote').textContent =
         errorText(error);
-
-      $('detailSystemRole').disabled = true;
     }
+  }
+  async function refreshMemberAfterRoleChange(memberId, requestId) {
+    const memberPath =
+      '/api/admin/members/' +
+      encodeURIComponent(memberId);
+
+    const isCurrentMember = () =>
+      requestId === state.detailRequestId &&
+      state.selected?.member_id === memberId;
+
+    // 會員資料與系統角色分別從正確的 API 取得
+    const [memberData, roleData] = await Promise.all([
+      api(memberPath),
+      state.canReadRoles
+        ? api(memberPath + '/system-roles')
+        : Promise.resolve(null)
+    ]);
+
+    if (!isCurrentMember()) return;
+
+    if (!memberData?.member) {
+      throw new Error('INVALID_MEMBER_RESPONSE');
+    }
+
+    if (
+      state.canReadRoles &&
+      (
+        !Array.isArray(roleData?.roles) ||
+        !Array.isArray(roleData?.definitions)
+      )
+    ) {
+      throw new Error('INVALID_ROLE_RESPONSE');
+    }
+
+    // 更新會員基本資料
+    state.selected = memberData.member;
+
+    // 更新系統角色資料
+    if (state.canReadRoles) {
+      state.roleData = roleData;
+    }
+
+    // 更新基本資料與帳號狀態
+    fillDetail(state.selected);
+
+    // 更新系統角色下拉選單
+    fillRoleSelect();
+
+    // 更新異動紀錄的角色名稱
+    refreshAuditDisplay();
+
+    console.log(
+      '[ADMIN MEMBERS] Member refreshed:',
+      {
+        memberId,
+        activeRoles: (
+          state.roleData?.roles || []
+        )
+          .filter(role => Number(role.enabled) === 1)
+          .map(role => role.system_role)
+      }
+    );
   }
 
   function fillDetail(member) {
@@ -794,9 +884,6 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       state.selected = data.member;
 
       fillDetail(state.selected);
-      if (state.canReadRoles) {
-        await loadSystemRoles(memberId, requestId);
-      }
       $('detailForm').hidden = false;
 
       setDetailMessage(
@@ -864,6 +951,14 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     const memberId = target.member_id;
     const requestId = state.detailRequestId;
 
+    const isCurrentMember = () =>
+      requestId === state.detailRequestId &&
+      state.selected?.member_id === memberId;
+
+    // ============================================================
+    // 1. 基本資料
+    // ============================================================
+
     const body = {
       name: $('detailName').value.trim(),
       email: $('detailEmail').value.trim() || null,
@@ -876,6 +971,10 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       body.phone !== (target.phone || null)
     );
 
+    // ============================================================
+    // 2. 帳號狀態
+    // ============================================================
+
     const nextStatus = document.querySelector(
       'input[name="detailStatus"]:checked'
     )?.value;
@@ -885,16 +984,22 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       ['active', 'inactive'].includes(nextStatus) &&
       nextStatus !== target.status;
 
+    // ============================================================
+    // 3. 系統角色
+    // ============================================================
+
     const roleSelect = $('detailSystemRole');
+
     const activeRoles = (state.roleData?.roles || [])
-      .filter(r => Number(r.enabled) === 1)
-      .map(r => r.system_role);
+      .filter(role => Number(role.enabled) === 1)
+      .map(role => role.system_role);
 
     const nextRole = roleSelect?.value || '';
 
     const changedRole =
       state.canReadRoles &&
       state.canAssignRoles &&
+      state.roleData !== null &&
       !roleSelect?.disabled &&
       !!nextRole &&
       (
@@ -902,32 +1007,47 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         activeRoles[0] !== nextRole
       );
 
-    if (!changedBasic && !changedStatus && !changedRole) {
+    // ============================================================
+    // 4. 檢查是否有異動
+    // ============================================================
+
+    if (
+      !changedBasic &&
+      !changedStatus &&
+      !changedRole
+    ) {
       setDetailMessage('資料沒有變更。');
       return;
     }
 
     if (changedBasic && !body.name) {
-      setDetailMessage('請輸入會員姓名');
+      setDetailMessage('請輸入會員姓名。');
       $('detailName').focus();
       return;
     }
+
+    // ============================================================
+    // 5. 系統角色異動確認
+    // ============================================================
 
     if (changedRole) {
       const previous =
         activeRoles.map(roleLabel).join('、') || '未指派';
 
       const confirmed = window.confirm(
-        `確定變更 ${target.name || memberId} (${memberId}) 的系統角色？\n` +
-        `目前：${previous}\n` +
-        `新角色：${roleLabel(nextRole)}\n\n` +
+        `確定變更 ${target.name || memberId} (${memberId}) 的系統角色？\n\n` +
+        `目前角色：${previous}\n` +
+        `新系統角色：${roleLabel(nextRole)}\n\n` +
         '更新後將撤銷此會員現有的登入 Session，需重新登入。'
       );
 
       if (!confirmed) return;
     }
 
-    // 帳號狀態變更需要再次確認
+    // ============================================================
+    // 6. 帳號狀態異動確認
+    // ============================================================
+
     if (changedStatus) {
       const action =
         nextStatus === 'inactive' ? '停用' : '啟用';
@@ -937,7 +1057,7 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
         : '';
 
       const confirmed = window.confirm(
-        `確定${action}會員 ${target.name || memberId} (${memberId})？\n` +
+        `確定${action}會員 ${target.name || memberId} (${memberId})？\n\n` +
         `目前：${statusText(target.status)}\n` +
         `變更為：${statusText(nextStatus)}` +
         warning
@@ -946,10 +1066,18 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
       if (!confirmed) return;
     }
 
+    // ============================================================
+    // 7. 鎖定表單
+    // ============================================================
+
     const button = $('detailSave');
 
     state.statusSaving = true;
     button.disabled = true;
+
+    if (roleSelect) {
+      roleSelect.disabled = true;
+    }
 
     document.querySelectorAll(
       'input[name="detailStatus"]'
@@ -961,115 +1089,201 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     let statusSaved = false;
     let roleSaved = false;
 
-    if (roleSelect) {
-      roleSelect.disabled = true;
-    }
-
     setDetailMessage('正在儲存會員資料…');
 
+    // ============================================================
+    // 8. 執行更新
+    // ============================================================
+
     try {
-      // 基本資料與狀態使用不同 API
+      const memberPath =
+        '/api/admin/members/' +
+        encodeURIComponent(memberId);
+
+      // ----------------------------------------------------------
+      // A. 更新基本資料
+      // ----------------------------------------------------------
+
       if (changedBasic) {
-        await api(
-          '/api/admin/members/' +
-            encodeURIComponent(memberId),
-          {
-            method: 'PATCH',
-            body
-          }
-        );
+        await api(memberPath, {
+          method: 'PATCH',
+          body
+        });
 
         basicSaved = true;
       }
 
-      if (changedStatus) {
-        await api(
-            '/api/admin/members/' +
-            encodeURIComponent(memberId) +
-            '/system-role',
-            {
-              method: 'PUT',
-              body: {
-                system_role: nextRole
-              }
-            }
-          );
-        roleSaved = true;
-        
-        await api(
-          '/api/admin/members/' +
-            encodeURIComponent(memberId) +
-            '/status',
-          {
-            method: 'PATCH',
-            body: {
-              status: nextStatus
-            }
+      // ----------------------------------------------------------
+      // B. 帳號由停用改成啟用
+      //
+      // 若同時變更角色，必須先啟用帳號，
+      // 因為後端不允許對停用會員指派角色。
+      // ----------------------------------------------------------
+
+      if (
+        changedStatus &&
+        nextStatus === 'active'
+      ) {
+        await api(memberPath + '/status', {
+          method: 'PATCH',
+          body: {
+            status: nextStatus
           }
-        );
+        });
 
         statusSaved = true;
       }
 
-      // 重新取得最新會員資料
-      const refreshed = await api('/api/admin/members/' + encodeURIComponent(memberId));
+      // ----------------------------------------------------------
+      // C. 更新系統角色
+      //
+      // 注意：這裡必須是獨立的 if (changedRole)，
+      // 不能放進 if (changedStatus)。
+      // ----------------------------------------------------------
 
-      if (requestId !== state.detailRequestId || state.selected?.member_id !== memberId) { return; }
+      if (changedRole) {
+        const result = await api(
+          memberPath + '/system-role',
+          {
+            method: 'PUT',
+            body: {
+              system_role: nextRole
+            }
+          }
+        );
 
-      if (!refreshed.member) {
-        throw new Error('INVALID_RESPONSE');
+        roleSaved = true;
+
+        console.log(
+          '[ADMIN MEMBERS] System role updated:',
+          {
+            memberId,
+            previousRoles: activeRoles,
+            nextRole,
+            result
+          }
+        );
       }
 
-      state.selected = refreshed.member;
+      // ----------------------------------------------------------
+      // D. 帳號由啟用改成停用
+      //
+      // 先完成角色變更，再停用帳號。
+      // ----------------------------------------------------------
 
-      fillDetail(state.selected);
-      if (state.canReadRoles) {
-        await loadSystemRoles(memberId, requestId);
+      if (
+        changedStatus &&
+        nextStatus === 'inactive'
+      ) {
+        await api(memberPath + '/status', {
+          method: 'PATCH',
+          body: {
+            status: nextStatus
+          }
+        });
+
+        statusSaved = true;
       }
-      setDetailMessage('會員資料已儲存。');
 
+      // ----------------------------------------------------------
+      // E. 重新取得會員資料與系統角色
+      // ----------------------------------------------------------
+
+      if (!isCurrentMember()) return;
+
+      await refreshMemberAfterRoleChange(
+        memberId,
+        requestId
+      );
+
+      if (!isCurrentMember()) return;
+
+      // ----------------------------------------------------------
+      // F. 重新載入異動紀錄
+      // ----------------------------------------------------------
+
+      if (changedRole || changedStatus) {
+        await loadRelationships(
+          memberId,
+          requestId
+        );
+      }
+
+      if (!isCurrentMember()) return;
+
+      // ----------------------------------------------------------
+      // G. 顯示成功訊息
+      // ----------------------------------------------------------
+
+      const updated = [];
+
+      if (basicSaved) updated.push('基本資料');
+      if (roleSaved) updated.push('系統角色');
+      if (statusSaved) updated.push('帳號狀態');
+
+      setDetailMessage(
+        `${updated.join('、')}已更新。`
+      );
+
+      // 會員列表仍維持原有更新流程
       await load();
 
     } catch (error) {
-      if (
-        requestId !== state.detailRequestId ||
-        state.selected?.member_id !== memberId
-      ) {
-        return;
-      }
-
-      const code = error?.message;
-
-      const detail =
-        code === 'EDIT_CONFLICT_OR_LAST_ADMIN'
-          ? '異動衝突或此會員是最後一位管理員，請重新查詢後再試。'
-          : code === 'CANNOT_CHANGE_OWN_STATUS'
-          ? '不能變更自己的帳號狀態。'
-          : errorText(error);
-
-      const prefix =
-        basicSaved || statusSaved || roleSaved
-          ? '部分變更已儲存；'
-          : '';
-
-      setDetailMessage(prefix + detail);
+      if (!isCurrentMember()) return;
 
       console.error(
         '[ADMIN MEMBERS] Save failed:',
         error
       );
 
-      if (basicSaved || statusSaved || roleSaved) {
-        await load();
+      const code = error?.message;
+
+      const detail =
+        code === 'EDIT_CONFLICT_OR_LAST_ADMIN'
+          ? '異動衝突，或此操作會影響最後一位管理員。'
+          : code === 'CANNOT_CHANGE_OWN_STATUS'
+          ? '不能修改自己的帳號狀態。'
+          : errorText(error);
+
+      const partiallySaved =
+        basicSaved ||
+        statusSaved ||
+        roleSaved;
+
+      setDetailMessage(
+        (partiallySaved ? '部分變更已儲存；' : '') +
+        detail
+      );
+
+      // 即使部分更新失敗，也重新同步後端實際資料
+      if (partiallySaved) {
+        try {
+          await refreshMemberAfterRoleChange(
+            memberId,
+            requestId
+          );
+
+          if (isCurrentMember()) {
+            await loadRelationships(
+              memberId,
+              requestId
+            );
+          }
+
+          await load();
+
+        } catch (refreshError) {
+          console.error(
+            '[ADMIN MEMBERS] Refresh after partial save failed:',
+            refreshError
+          );
+        }
       }
 
     } finally {
       state.statusSaving = false;
 
-      if (
-        requestId === state.detailRequestId &&
-        state.selected?.member_id === memberId
-      ) {
+      if (isCurrentMember()) {
         button.disabled = false;
 
         document.querySelectorAll(
@@ -1081,8 +1295,10 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
               state.selected.status
             );
         });
+
+        // 根據最新角色權限重新設定下拉選單
+        fillRoleSelect();
       }
-      fillRoleSelect();
     }
   }
 

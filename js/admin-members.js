@@ -733,11 +733,11 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     $('serviceSearchButton').disabled = true;
     $('serviceSearchMessage').textContent = '搜尋中…';
     try {
-      const data = await api('/api/admin/members?' + new URLSearchParams({q:query,page:'1',page_size:'20'}));
+      const data = await api('/api/admin/members?' + new URLSearchParams({q:query,role:'distributor',status:'active',page:'1',page_size:'20'}));
       if (requestId !== state.serviceSearchRequestId) return;
       const candidates = (data.items || []).filter(m => m.role === 'distributor' && m.status === 'active');
       $('serviceSearchResults').innerHTML = candidates.map(m => `<button type="button" class="hierarchy-parent-choice" data-servicer-id="${esc(m.member_id)}"><strong>${esc(m.name)}</strong><small>${esc(m.member_id)}${m.amway_id ? ' · ' + esc(m.amway_id) : ''}</small></button>`).join('') || '<p>此頁搜尋結果沒有符合條件的有效直銷商</p>';
-      $('serviceSearchMessage').textContent = `顯示 ${candidates.length} 位候選人（最多查詢 20 筆）`;
+      $('serviceSearchMessage').textContent = `顯示 ${candidates.length} 位候選人（有效直銷商，最多顯示 20 筆）`;
     } catch (error) {
       if (requestId === state.serviceSearchRequestId) $('serviceSearchMessage').textContent = errorText(error);
     } finally {
@@ -787,11 +787,11 @@ import { $, esc, api, getToken, errors } from './admin-common.js';
     $('hierarchyParentSearchButton').disabled = true;
     $('hierarchyParentSearchMessage').textContent = '搜尋中…';
     try {
-      const data = await api('/api/admin/members?' + new URLSearchParams({q:query,page:'1',page_size:'20'}));
+      const data = await api('/api/admin/members?' + new URLSearchParams({q:query,role:'distributor',status:'active',page:'1',page_size:'20'}));
       if (requestId !== state.parentSearchRequestId) return;
       const candidates = (data.items || []).filter(m => m.member_id !== state.selected?.member_id && m.role === 'distributor' && m.status === 'active');
       $('hierarchyParentResults').innerHTML = candidates.map(m => `<button type="button" class="hierarchy-parent-choice" data-parent-id="${esc(m.member_id)}"><strong>${esc(m.name)}</strong><small>${esc(m.member_id)}${m.amway_id ? ' · ' + esc(m.amway_id) : ''}</small></button>`).join('') || '<p>此頁搜尋結果沒有符合條件的有效直銷商</p>';
-      $('hierarchyParentSearchMessage').textContent = `顯示 ${candidates.length} 位候選人（最多查詢 20 筆）`;
+      $('hierarchyParentSearchMessage').textContent = `顯示 ${candidates.length} 位候選人（有效直銷商，最多顯示 20 筆）`;
     } catch (error) {
       if (requestId === state.parentSearchRequestId) $('hierarchyParentSearchMessage').textContent = errorText(error);
     } finally {
